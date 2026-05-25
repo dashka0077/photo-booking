@@ -1,0 +1,7 @@
+
+> photo-studio@1.0.0 start
+> node server/index.js
+
+◇ injected env (3) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+Server started on port 5000

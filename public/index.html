@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHOTO STUDIO</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" href="#home" aria-label="PHOTO STUDIO">
+            <span class="brand-icon" aria-hidden="true">PS</span>
+            <span class="brand-text">
+                <strong data-brand-name>PHOTO STUDIO</strong>
+                <small data-brand-tagline>Запечатлеваем важные моменты</small>
+            </span>
+        </a>
+
+        <nav class="nav" aria-label="Навигация">
+            <a href="#home"><span>⌂</span>Главная</a>
+            <a href="#services"><span>▣</span>Услуги</a>
+            <a href="#portfolio"><span>▤</span>Портфолио</a>
+            <a href="#about"><span>♙</span>Обо мне</a>
+            <a href="#certificate"><span>□</span>Сертификаты</a>
+            <a href="#addons"><span>✦</span>Доп. услуги</a>
+            <a href="#profile" data-auth-link><span>♙</span>Профиль</a>
+            <a href="#favorites" data-auth-link><span>♡</span>Избранное</a>
+            <a href="#admin" data-admin-link hidden><span>⚙</span>Админка</a>
+        </nav>
+
+        <div class="actions">
+            <button class="btn ghost" data-open-auth="login">Вход</button>
+            <button class="btn" data-open-auth="register">Регистрация</button>
+            <a class="btn accent" href="#booking">Записаться онлайн</a>
+            <button class="icon-btn" data-logout hidden title="Выйти" aria-label="Выйти">↪</button>
+            <a class="btn ghost admin-shortcut" href="#admin" data-admin-link hidden>Админка</a>
+        </div>
+    </header>
+
+    <main id="app"></main>
+
+    <section class="modal" id="authModal" hidden>
+        <div class="modal-panel">
+            <button class="modal-close" data-close-modal aria-label="Закрыть">×</button>
+            <div class="tabs">
+                <button class="tab active" data-auth-tab="login">Вход</button>
+                <button class="tab" data-auth-tab="register">Регистрация</button>
+            </div>
+            <form id="loginForm" class="form">
+                <label>Email<input type="email" name="email" required></label>
+                <label>Пароль<input type="password" name="password" required></label>
+                <button class="btn accent" type="submit">Войти</button>
+            </form>
+            <form id="registerForm" class="form" hidden>
+                <label>Имя<input name="name" required></label>
+                <label>Email<input type="email" name="email" required></label>
+                <label>Телефон<input name="phone"></label>
+                <label>Пароль<input type="password" name="password" minlength="6" required></label>
+                <button class="btn accent" type="submit">Создать аккаунт</button>
+            </form>
+        </div>
+    </section>
+
+    <section class="modal" id="bookingModal" hidden>
+        <div class="modal-panel large">
+            <button class="modal-close" data-close-modal aria-label="Закрыть">×</button>
+            <h2>Онлайн-запись</h2>
+            <form id="bookingForm" class="form booking-grid">
+                <label>Услуга<select name="serviceId" required></select></label>
+                <input type="hidden" name="packageId">
+                <div class="wide">
+                    <p class="field-title">Пакет</p>
+                    <div class="package-choice-list" data-booking-packages></div>
+                </div>
+                <label>Длительность, часов<input type="number" name="hours" value="1" min="1" max="8"></label>
+                <div class="wide">
+                    <p class="field-title">Дополнительные услуги</p>
+                    <div class="check-list" id="bookingAddons"></div>
+                </div>
+                <label>Дата<input type="date" name="date" required></label>
+                <input type="hidden" name="time" required>
+                <div class="wide">
+                    <p class="field-title">Свободные окошки</p>
+                    <div class="slot-list" data-slot-list></div>
+                </div>
+                <label class="wide">Комментарий<textarea name="comment" rows="3" placeholder="Пожелания по съемке, локации или образу"></textarea></label>
+                <div class="booking-total wide">
+                    <span>Итоговая сумма</span>
+                    <strong data-booking-total>0 ₽</strong>
+                </div>
+                <button class="btn accent wide" type="submit">Забронировать</button>
+            </form>
+        </div>
+    </section>
+
+    <div class="toast" id="toast" hidden></div>
+    <script src="/app.js"></script>
+</body>
+</html>
