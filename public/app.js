@@ -2264,8 +2264,8 @@ function adminCertificateDesignCard(design) {
                 <span class="admin-pill ${active ? 'active' : 'inactive'}">${active ? 'Активный' : 'Скрытый'}</span>
             </div>
             <div class="admin-row-actions">
-                <button class="icon-mini" type="button" data-admin-row-edit="certificateDesign" data-id="${design.id}" title="Редактировать">✎</button>
-                <button class="icon-mini" type="button" data-admin-delete="certificateDesign" data-id="${design.id}" title="Скрыть">⋮</button>
+                <button class="btn ghost admin-action-btn" type="button" data-admin-row-edit="certificateDesign" data-id="${design.id}">Редактировать</button>
+                <button class="btn ghost admin-action-btn danger" type="button" data-admin-delete="certificateDesign" data-id="${design.id}">Удалить</button>
             </div>
             <div class="admin-compact-editor" data-admin-editor="certificateDesign-${design.id}" hidden>${adminCertificateDesignForm(design)}</div>
         </article>
@@ -2336,7 +2336,7 @@ function adminCertificateDesignRow(design) {
             <td>${esc(design.theme || 'dark')}</td>
             <td>${Number(design.sort_order || 0)}</td>
             <td><span class="admin-pill ${active ? 'active' : 'inactive'}">${active ? 'Активный' : 'Скрытый'}</span></td>
-            <td><div class="admin-row-actions"><button class="icon-mini" type="button" data-admin-row-edit="certificateDesign" data-id="${design.id}" title="Редактировать">✎</button><button class="icon-mini" type="button" data-admin-delete="certificateDesign" data-id="${design.id}" title="Скрыть">⋮</button></div></td>
+            <td><div class="admin-row-actions"><button class="btn ghost admin-action-btn" type="button" data-admin-row-edit="certificateDesign" data-id="${design.id}">Редактировать</button><button class="btn ghost admin-action-btn danger" type="button" data-admin-delete="certificateDesign" data-id="${design.id}">Удалить</button></div></td>
         </tr>
         <tr class="admin-inline-editor" data-admin-editor="certificateDesign-${design.id}" hidden><td colspan="6">${adminCertificateDesignForm(design)}</td></tr>
     `;
@@ -3066,8 +3066,11 @@ document.addEventListener('click', async (event) => {
         };
 
         if (paths[type]) {
+            if (type === 'certificateDesign' && !confirm('Удалить этот дизайн сертификата?')) {
+                return;
+            }
             await api(paths[type], { method: 'DELETE' });
-            showToast(type === 'portfolio' ? 'Работа удалена' : 'Запись скрыта');
+            showToast(type === 'portfolio' ? 'Работа удалена' : type === 'certificateDesign' ? 'Дизайн удален' : 'Запись скрыта');
             await boot();
             location.hash = ['certificateProduct', 'certificateDesign', 'certificateDelivery'].includes(type)
                 ? 'admin-certificates'

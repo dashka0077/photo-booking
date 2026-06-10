@@ -907,8 +907,8 @@ router.put('/admin/certificate-designs/:id', async (req, res) => {
 });
 
 router.delete('/admin/certificate-designs/:id', async (req, res) => {
-    await pool.query('UPDATE certificate_designs SET is_active = false WHERE id = $1', [req.params.id]);
-    res.json({ message: 'Дизайн скрыт' });
+    await pool.query('DELETE FROM certificate_designs WHERE id = $1', [req.params.id]);
+    res.json({ message: 'Дизайн удален' });
 });
 
 router.get('/admin/certificate-delivery-options', async (req, res) => {
