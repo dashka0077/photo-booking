@@ -284,9 +284,9 @@ async function seedServicePackages() {
         for (const item of packages) {
             await pool.query(`
                 INSERT INTO service_packages (service_id, title, price, hours, photo_count, retouch_count, sort_order)
-                SELECT $1, $2, $3, $4, $5, $6, $7
+                SELECT $1::integer, $2::varchar, $3::integer, $4::numeric, $5::varchar, $6::varchar, $7::integer
                 WHERE NOT EXISTS (
-                    SELECT 1 FROM service_packages WHERE service_id = $1 AND title = $2
+                    SELECT 1 FROM service_packages WHERE service_id = $1::integer AND title = $2::varchar
                 )
             `, [service.id, ...item]);
         }
@@ -294,11 +294,18 @@ async function seedServicePackages() {
 }
 
 async function seedServices() {
+    const upload = (fileName) => `/uploads/${fileName}`;
     const services = [
-        ['Индивидуальная фотосессия', 'Портретная съемка в студии, городе или на природе.', 5000, 1, 'Портрет', 'https://images.unsplash.com/photo-1512316609839-ce289d3eba0a?auto=format&fit=crop&w=900&q=80', true],
-        ['Love Story', 'Романтическая фотосессия для пары в красивых локациях.', 6000, 1, 'Пара', 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=900&q=80', true],
-        ['Семейная фотосессия', 'Теплые и живые семейные кадры с естественными эмоциями.', 7000, 1, 'Семья', 'https://images.unsplash.com/photo-1542037104857-ffbb0b9155fb?auto=format&fit=crop&w=900&q=80', true],
-        ['Фотосессия беременности', 'Нежные и красивые кадры в ожидании чуда.', 6000, 1, 'Беременность', 'https://images.unsplash.com/photo-1492725764893-90b379c2b6e7?auto=format&fit=crop&w=900&q=80', false]
+        ['Индивидуальная фотосессия', 'Портретная съемка в студии, городе или на природе.', 5000, 1, 'Портрет', upload('1778782835314-service1_4.jpg'), true, '1 час', '7-10 дней', 'от 50 фото', 'Студия / Улица', 'Помощь в позировании и подборе образа'],
+        ['Love Story', 'Романтическая фотосессия для пары в красивых локациях.', 6000, 1, 'Пара', upload('1778782975344-service2.jpg'), true, '1-1,5 часа', '7-10 дней', 'от 70 фото', 'Студия / прогулка', 'Подберем маршрут и настроение съемки'],
+        ['Семейная фотосессия', 'Теплые и живые семейные кадры с естественными эмоциями.', 7000, 1, 'Семья', upload('1778782931927-gallery1.jpg'), true, '1-1,5 часа', '7-12 дней', 'от 80 фото', 'Студия / дом / улица', 'Поможем с образами для всей семьи'],
+        ['Фотосессия беременности', 'Нежные и красивые кадры в ожидании чуда.', 6000, 1, 'Беременность', upload('1778799100676-photo2.jpg'), false, '1 час', '7-10 дней', 'от 50 фото', 'Студия / природа', 'Спокойная съемка с мягким позированием'],
+        ['Контент-съемка', 'Фото для социальных сетей, сайта, личного бренда и экспертного блога.', 8000, 2, 'Контент', upload('1781037357299-photo1.jpg'), true, '2 часа', '5-7 дней', 'от 100 фото', 'Студия / рабочая локация', 'Составим план кадров под ваши задачи'],
+        ['Бизнес-портрет', 'Деловые портреты для резюме, сайта, команды и профессиональных профилей.', 6500, 1, 'Бизнес', upload('1778844214485-image.jpg'), false, '1 час', '5-7 дней', 'от 40 фото', 'Студия / офис', 'Подберем свет, фон и строгий образ'],
+        ['Свадебная съемка', 'Репортаж и постановочные кадры церемонии, прогулки и важных деталей дня.', 18000, 4, 'Свадьба', upload('1778844269816-4.jpg'), true, 'от 4 часов', '14-21 день', 'от 250 фото', 'Выездная съемка', 'Поможем с таймингом и локациями'],
+        ['Детская фотосессия', 'Легкая и живая съемка детей с играми, движением и настоящими эмоциями.', 5500, 1, 'Дети', upload('1778763414224-2.jpg'), false, '1 час', '7-10 дней', 'от 50 фото', 'Студия / улица', 'Съемка проходит в комфортном темпе для ребенка'],
+        ['Репортажная съемка', 'Фотографии мероприятий, праздников, мастер-классов и камерных событий.', 9000, 2, 'Репортаж', upload('1778844249609-2.jpg'), false, 'от 2 часов', '5-10 дней', 'от 120 фото', 'Выездная съемка', 'Сохраним атмосферу события без лишней постановки'],
+        ['Предметная съемка', 'Аккуратные кадры товаров, декора, handmade-изделий и каталожных позиций.', 7000, 2, 'Предметы', upload('1778844179962-image.jpg'), false, '2 часа', '5-7 дней', 'от 60 фото', 'Студия', 'Подберем фон, свет и композицию под продукт']
     ];
 
     for (const service of services) {
@@ -306,6 +313,22 @@ async function seedServices() {
             INSERT INTO services (title, description, price, duration_hours, category, image_url, is_popular)
             SELECT $1::varchar, $2::text, $3::integer, $4::integer, $5::varchar, $6::text, $7::boolean
             WHERE NOT EXISTS (SELECT 1 FROM services WHERE title = $1);
+        `, service.slice(0, 7));
+        await pool.query(`
+            UPDATE services
+            SET description = $2::text,
+                price = $3::integer,
+                duration_hours = $4::integer,
+                category = $5::varchar,
+                image_url = $6::text,
+                is_popular = $7::boolean,
+                service_duration_text = $8::varchar,
+                photo_delivery_text = $9::varchar,
+                photo_count_text = $10::varchar,
+                service_location = $11::varchar,
+                service_recommendations = $12::text,
+                is_active = true
+            WHERE title = $1::varchar;
         `, service);
     }
 }
@@ -339,11 +362,18 @@ async function seedAddons() {
 }
 
 async function seedPortfolio() {
+    const upload = (fileName) => `/uploads/${fileName}`;
     const items = [
-        ['Осенний портрет', 'Портрет', 'https://images.unsplash.com/photo-1512316609839-ce289d3eba0a?auto=format&fit=crop&w=900&q=80', 1],
-        ['История двоих', 'Love Story', 'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=900&q=80', 2],
-        ['Семейное утро', 'Семья', 'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=900&q=80', 3],
-        ['В ожидании', 'Беременность', 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=900&q=80', 4]
+        ['Осенний портрет', 'Портрет', upload('1778782835314-service1_4.jpg'), 1],
+        ['История двоих', 'Love Story', upload('1778782975344-service2.jpg'), 2],
+        ['Семейное утро', 'Семья', upload('1778782931927-gallery1.jpg'), 3],
+        ['В ожидании', 'Беременность', upload('1778799100676-photo2.jpg'), 4],
+        ['Личный бренд', 'Контент', upload('1781037357299-photo1.jpg'), 5],
+        ['Деловой портрет', 'Бизнес', upload('1778844214485-image.jpg'), 6],
+        ['Свадебный день', 'Свадьба', upload('1778844269816-4.jpg'), 7],
+        ['Детская история', 'Дети', upload('1778763414224-2.jpg'), 8],
+        ['Событие в кадре', 'Репортаж', upload('1778844249609-2.jpg'), 9],
+        ['Детали продукта', 'Предметы', upload('1778844179962-image.jpg'), 10]
     ];
 
     for (const item of items) {
@@ -351,6 +381,13 @@ async function seedPortfolio() {
             INSERT INTO portfolio (title, category, image_url, sort_order)
             SELECT $1::varchar, $2::varchar, $3::text, $4::integer
             WHERE NOT EXISTS (SELECT 1 FROM portfolio WHERE title = $1);
+        `, item);
+        await pool.query(`
+            UPDATE portfolio
+            SET category = $2::varchar,
+                image_url = $3::text,
+                sort_order = $4::integer
+            WHERE title = $1::varchar;
         `, item);
     }
 }
@@ -422,11 +459,12 @@ async function seedSettings() {
         hero_eyebrow: '',
         hero_title: 'Профессиональные фотосессии',
         hero_text: 'Подберем идеальный образ, локацию и атмосферу для ваших незабываемых фотографий',
-        hero_image_url: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1800&q=80',
+        hero_image_url: '/uploads/1778782944395-about-hero.jpg',
         about_title: 'Фотограф Дарья',
         about_intro: 'Привет! Меня зовут Дарья. Я фотограф, который помогает людям чувствовать себя спокойно перед камерой и сохранять живые, теплые моменты без лишней постановки.',
         about_text: 'Мой путь в фотографии начался с простого желания замечать красоту в обычных моментах: в мягком свете, искреннем взгляде, движении рук и улыбке между фразами.\n\nСегодня для меня съемка — это не только красивые кадры, но и бережный процесс. Я заранее помогаю продумать образ, выбрать локацию и настроение, а во время съемки мягко направляю, чтобы вам не приходилось думать, куда деть руки или как встать.\n\nЯ снимаю портреты, love story, семейные истории и важные личные события. Моя цель — сделать фотографии, в которых вы узнаете себя настоящими и к которым захотите возвращаться снова.',
-        about_hero_image_url: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1800&q=80',
+        about_hero_image_url: '/uploads/darya.jpg',
+        about_image_url: '/uploads/darya.jpg',
         about_years_value: '7+',
         about_years_label: 'лет опыта',
         about_clients_value: '1000+',
