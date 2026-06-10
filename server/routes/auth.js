@@ -7,10 +7,18 @@ const router = express.Router();
 
 router.post('/register', async (req, res) => {
     try {
-        const { name, email, password, phone } = req.body;
+        const { name, email, password, repeatPassword, botCheck, phone } = req.body;
 
         if (!name || !email || !password || password.length < 6) {
             return res.status(400).json({ message: 'Заполните имя, email и пароль от 6 символов' });
+        }
+
+        if (!repeatPassword || password !== repeatPassword) {
+            return res.status(400).json({ message: 'Пароли не совпадают' });
+        }
+
+        if (String(botCheck || '').trim() !== '5') {
+            return res.status(400).json({ message: 'Проверка не пройдена' });
         }
 
         const existingUser = await pool.query(

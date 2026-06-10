@@ -7,7 +7,9 @@
     "start": "node server/index.js",
     "dev": "nodemon server/index.js",
     "init-db": "node server/init-db.js",
-    "check": "node --check server/index.js && node --check server/routes/auth.js && node --check server/routes/api.js && node --check server/init-db.js"
+    "create-admin": "node server/create-admin.js",
+    "seed-uploads": "node server/seed-uploads.js",
+    "check": "node --check server/index.js && node --check server/db.js && node --check server/routes/auth.js && node --check server/routes/api.js && node --check server/init-db.js && node --check server/seed-uploads.js"
   },
   "keywords": [],
   "author": "",

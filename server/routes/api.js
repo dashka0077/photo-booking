@@ -91,8 +91,8 @@ async function ensureDefaultServicePackages(serviceId = null) {
         for (const item of packages) {
             await pool.query(`
                 INSERT INTO service_packages (service_id, title, price, hours, photo_count, retouch_count, sort_order)
-                SELECT $1, $2, $3, $4, $5, $6, $7
-                WHERE NOT EXISTS (SELECT 1 FROM service_packages WHERE service_id = $1 AND title = $2)
+                SELECT $1::integer, $2::varchar, $3::integer, $4::numeric, $5::varchar, $6::varchar, $7::integer
+                WHERE NOT EXISTS (SELECT 1 FROM service_packages WHERE service_id = $1::integer AND title = $2::varchar)
             `, [service.id, ...item]);
         }
     }
@@ -261,11 +261,17 @@ router.post('/certificates', async (req, res) => {
         return res.status(400).json({ message: 'Заполните имя, email и сумму сертификата' });
     }
 
+    const userResult = await pool.query(
+        'SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1',
+        [buyerEmail]
+    );
+    const userId = userResult.rows[0]?.id || null;
+
     const result = await pool.query(`
         INSERT INTO certificates (buyer_name, buyer_email, amount, recipient_name, message, user_id)
-        VALUES ($1, $2, $3, $4, $5, (SELECT id FROM users WHERE lower(email) = lower($2) LIMIT 1))
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *
-    `, [buyerName, buyerEmail, Number(amount), recipientName || null, message || null]);
+    `, [buyerName, buyerEmail, Number(amount), recipientName || null, message || null, userId]);
 
     res.status(201).json(result.rows[0]);
 });
@@ -566,7 +572,9 @@ router.post('/messages', authRequired, async (req, res) => {
     res.status(201).json(result.rows[0]);
 });
 
-router.get('/admin/chat-clients', authRequired, adminRequired, async (req, res) => {
+router.use('/admin', authRequired, adminRequired);
+
+router.get('/admin/chat-clients', async (req, res) => {
     await ensureUserProfileColumns();
     const result = await pool.query(`
         SELECT
@@ -995,10 +1003,12 @@ async function upsertService(data) {
         serviceLocation,
         serviceRecommendations,
         isPopular,
-        isActive
+        isActive,
+        is_active
     } = data;
 
     await ensureServiceDetailColumns();
+    const activeValue = isActive ?? is_active;
 
     if (id) {
         const result = await pool.query(`
@@ -1031,7 +1041,7 @@ async function upsertService(data) {
             serviceLocation || null,
             serviceRecommendations || null,
             isPopular ?? null,
-            isActive ?? null,
+            activeValue ?? null,
             id
         ]);
         return result.rows[0];
@@ -1050,9 +1060,10 @@ async function upsertService(data) {
             photo_count_text,
             service_location,
             service_recommendations,
-            is_popular
+            is_popular,
+            is_active
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         RETURNING *
     `, [
         title,
@@ -1066,7 +1077,8 @@ async function upsertService(data) {
         photoCountText || null,
         serviceLocation || null,
         serviceRecommendations || null,
-        Boolean(isPopular)
+        Boolean(isPopular),
+        activeValue === undefined ? true : activeValue
     ]);
     return result.rows[0];
 }

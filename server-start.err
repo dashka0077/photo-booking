@@ -1,0 +1,133 @@
+Error: read ECONNRESET
+    at C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async ensureUserProfileColumns (C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\server\routes\api.js:11:5)
+    at async C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\server\routes\api.js:384:5 {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\server\routes\api.js:353:20 {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: getaddrinfo ENOTFOUND dpg-d8a264beo5us739c1620-a.oregon-postgres.render.com
+    at C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\server\routes\api.js:353:20 {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'dpg-d8a264beo5us739c1620-a.oregon-postgres.render.com'
+}
+Error: getaddrinfo ENOTFOUND dpg-d8a264beo5us739c1620-a.oregon-postgres.render.com
+    at C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async ensureUserProfileColumns (C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\server\routes\api.js:11:5)
+    at async C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\server\routes\api.js:384:5 {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'dpg-d8a264beo5us739c1620-a.oregon-postgres.render.com'
+}
+Error: getaddrinfo ENOTFOUND dpg-d8a264beo5us739c1620-a.oregon-postgres.render.com
+    at C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\server\routes\api.js:353:20 {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'dpg-d8a264beo5us739c1620-a.oregon-postgres.render.com'
+}
+Error: getaddrinfo ENOTFOUND dpg-d8a264beo5us739c1620-a.oregon-postgres.render.com
+    at C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async ensureUserProfileColumns (C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\server\routes\api.js:11:5)
+    at async C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\server\routes\api.js:384:5 {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'dpg-d8a264beo5us739c1620-a.oregon-postgres.render.com'
+}
+Error: getaddrinfo ENOTFOUND dpg-d8a264beo5us739c1620-a.oregon-postgres.render.com
+    at C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\server\routes\api.js:353:20 {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'dpg-d8a264beo5us739c1620-a.oregon-postgres.render.com'
+}
+Error: getaddrinfo ENOTFOUND dpg-d8a264beo5us739c1620-a.oregon-postgres.render.com
+    at C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async ensureUserProfileColumns (C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\server\routes\api.js:11:5)
+    at async C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\server\routes\api.js:384:5 {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'dpg-d8a264beo5us739c1620-a.oregon-postgres.render.com'
+}
+Error: getaddrinfo ENOTFOUND dpg-d8a264beo5us739c1620-a.oregon-postgres.render.com
+    at C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async ensureUserProfileColumns (C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\server\routes\api.js:11:5)
+    at async C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\server\routes\api.js:384:5 {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'dpg-d8a264beo5us739c1620-a.oregon-postgres.render.com'
+}
+Error: getaddrinfo ENOTFOUND dpg-d8a264beo5us739c1620-a.oregon-postgres.render.com
+    at C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\server\routes\api.js:353:20 {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'dpg-d8a264beo5us739c1620-a.oregon-postgres.render.com'
+}
+Error: getaddrinfo ENOTFOUND dpg-d8a264beo5us739c1620-a.oregon-postgres.render.com
+    at C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async ensureUserProfileColumns (C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\server\routes\api.js:11:5)
+    at async C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\server\routes\api.js:384:5 {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'dpg-d8a264beo5us739c1620-a.oregon-postgres.render.com'
+}
+Error: getaddrinfo ENOTFOUND dpg-d8a264beo5us739c1620-a.oregon-postgres.render.com
+    at C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\server\routes\api.js:353:20 {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'dpg-d8a264beo5us739c1620-a.oregon-postgres.render.com'
+}
+Error: connect ECONNABORTED 35.227.164.209:5432
+    at C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\server\routes\api.js:353:20 {
+  errno: -4079,
+  code: 'ECONNABORTED',
+  syscall: 'connect',
+  address: '35.227.164.209',
+  port: 5432
+}
+Error: connect ECONNABORTED 35.227.164.209:5432
+    at C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async ensureUserProfileColumns (C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\server\routes\api.js:11:5)
+    at async C:\Users\ntkit\OneDrive\Рабочий стол\photo-studio\server\routes\api.js:384:5 {
+  errno: -4079,
+  code: 'ECONNABORTED',
+  syscall: 'connect',
+  address: '35.227.164.209',
+  port: 5432
+}

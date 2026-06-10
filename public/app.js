@@ -8,6 +8,8 @@
     servicePackages: {},
     reviews: [],
     favoriteServices: [],
+    adminServices: [],
+    adminAddons: [],
     settings: {},
     user: JSON.parse(localStorage.getItem('photoUser') || 'null'),
     token: localStorage.getItem('photoToken')
@@ -17,6 +19,8 @@ const app = document.querySelector('#app');
 const toast = document.querySelector('#toast');
 const authModal = document.querySelector('#authModal');
 const bookingModal = document.querySelector('#bookingModal');
+const menuToggle = document.querySelector('[data-menu-toggle]');
+const mainNav = document.querySelector('#mainNav');
 
 const money = (value) => `${Number(value || 0).toLocaleString('ru-RU')} ₽`;
 const esc = (value = '') => String(value).replace(/[&<>"']/g, (char) => ({
@@ -85,6 +89,49 @@ function showToast(message) {
     }, 3200);
 }
 
+function closeAdminEditorModal() {
+    const modal = document.querySelector('#adminEditorModal');
+    if (modal) modal.hidden = true;
+}
+
+function openAdminEditorModal(title, content) {
+    let modal = document.querySelector('#adminEditorModal');
+    if (!modal) {
+        modal = document.createElement('section');
+        modal.className = 'modal admin-editor-modal';
+        modal.id = 'adminEditorModal';
+        modal.hidden = true;
+        document.body.appendChild(modal);
+    }
+
+    modal.innerHTML = `
+        <div class="modal-panel admin-editor-modal-panel">
+            <button class="modal-close" type="button" data-close-modal aria-label="Закрыть">×</button>
+            <div class="admin-editor-modal-head">
+                <div>
+                    <p class="eyebrow">Администрирование</p>
+                    <h2>${esc(title)}</h2>
+                    <span>Все изменения сразу отразятся на сайте.</span>
+                </div>
+                <a class="btn ghost" href="#services" data-close-modal>На сайт</a>
+            </div>
+            ${content}
+        </div>
+    `;
+    modal.hidden = false;
+}
+
+function closeMobileMenu() {
+    document.body.classList.remove('nav-open');
+    if (menuToggle) menuToggle.setAttribute('aria-expanded', 'false');
+}
+
+function toggleMobileMenu() {
+    const open = !document.body.classList.contains('nav-open');
+    document.body.classList.toggle('nav-open', open);
+    if (menuToggle) menuToggle.setAttribute('aria-expanded', String(open));
+}
+
 function scrollChatToBottom() {
     requestAnimationFrame(() => {
         document.querySelectorAll('.chat-messages').forEach((chat) => {
@@ -100,6 +147,11 @@ function setSession(data) {
     localStorage.setItem('photoUser', JSON.stringify(data.user));
     syncHeader();
     startStatusWatcher();
+    const pendingRoute = sessionStorage.getItem('photoPendingRoute');
+    if (pendingRoute) {
+        sessionStorage.removeItem('photoPendingRoute');
+        location.hash = pendingRoute;
+    }
     loadPersonalData().then(renderCurrentRoute).catch(handleRenderError);
 }
 
@@ -125,7 +177,7 @@ function syncHeader() {
     if (brandName) brandName.textContent = studioName;
     if (brandTagline) brandTagline.textContent = tagline;
     if (phoneLink) {
-        phoneLink.textContent = phone;
+        phoneLink.innerHTML = `<span>${esc(phone)}</span><small>Ежедневно 9:00 - 21:00</small>`;
         phoneLink.href = `tel:${phone.replace(/[^\d+]/g, '')}`;
     }
 }
@@ -237,7 +289,7 @@ function render() {
     if (route === 'portfolio') return renderPortfolioPage();
     if (route === 'about') return renderAboutPage();
     if (route === 'booking') return renderBookingPage();
-    if (route === 'certificate') return renderCertificatePage();
+    if (route === 'certificate' || route === 'certificateForm') return renderCertificatePage();
     if (route === 'profile') return renderProfilePage();
     if (route === 'favorites') return renderFavoritesPage();
     if (route === 'admin') return renderAdminPage();
@@ -307,7 +359,6 @@ function renderHomePage() {
     app.innerHTML = `
         <section class="hero" style="--hero-image: url('${esc(heroImage)}')">
             <div class="hero-inner">
-                <p class="eyebrow">${esc(state.settings.hero_eyebrow || 'Наши услуги')}</p>
                 <h1>${esc(state.settings.hero_title || 'Профессиональные фотосессии')}</h1>
                 <p>${esc(state.settings.hero_text || 'Подберем идеальный образ, локацию и атмосферу для ваших незабываемых фотографий')}</p>
                 <div class="hero-actions">
@@ -361,10 +412,11 @@ function benefit(icon, title, text) {
 function renderServicesPage() {
     app.innerHTML = `
         <section class="page">
+            ${pageBreadcrumb('Услуги')}
             <div class="section-head between">
                 <div>
                     <h1 class="page-title">Услуги</h1>
-                    <p class="lead">Выберите формат съемки. Каждая карточка загружается из базы данных и ведет на отдельную страницу услуги.</p>
+                    <p class="lead">Выберите формат съемки и посмотрите подробности по каждой услуге.</p>
                 </div>
                 <button class="btn accent" data-open-booking>Записаться онлайн</button>
             </div>
@@ -467,6 +519,10 @@ function renderServiceDetail(serviceId) {
                 ${state.user ? `
                     <form class="review-form" id="reviewForm">
                         <input type="hidden" name="serviceId" value="${service.id}">
+                        <div class="review-form-head">
+                            <strong>Оставить отзыв</strong>
+                            <span>Поделитесь впечатлением о съемке</span>
+                        </div>
                         <label>Оценка<select name="rating">
                             <option value="5">5 · Отлично</option>
                             <option value="4">4 · Хорошо</option>
@@ -513,6 +569,14 @@ function renderPublicFilters(scope, categories = []) {
                     ${uniqueCategories.map((category) => `<option value="${esc(category)}">${esc(category)}</option>`).join('')}
                 </select>
             ` : ''}
+        </div>
+    `;
+}
+
+function pageBreadcrumb(current) {
+    return `
+        <div class="breadcrumbs page-breadcrumb">
+            <a href="#home">Главная</a><span>›</span><strong>${esc(current)}</strong>
         </div>
     `;
 }
@@ -588,7 +652,7 @@ function renderAddonsPage() {
                     <h3>Комплексные пакеты услуг</h3>
                     <p>Сэкономьте с нашими пакетными предложениями! Подберем оптимальный набор услуг под ваши задачи и бюджет.</p>
                 </div>
-                <a class="btn ghost" href="#booking">Обсудить пакет</a>
+                <button class="btn ghost" type="button" data-open-chat>Обсудить пакет</button>
             </div>
         </section>
         ${renderCta('Нужна помощь с выбором?', 'Свяжитесь с нами, и мы подберем лучшее решение для вашей съемки')}
@@ -599,10 +663,11 @@ function renderAddonsPage() {
 function renderPortfolioPage() {
     app.innerHTML = `
         <section class="page">
+            ${pageBreadcrumb('Портфолио')}
             <div class="section-head">
                 <h1 class="page-title">Портфолио</h1>
                 <span class="section-mark"></span>
-                <p class="lead">Работы загружаются из таблицы портфолио, поэтому админ сможет обновлять галерею без правки кода.</p>
+                <p class="lead">Посмотрите примеры съемок и выберите настроение для своей фотосессии.</p>
             </div>
             ${renderPublicFilters('portfolio', state.portfolio.map((item) => item.category))}
             <div class="portfolio-grid">
@@ -652,7 +717,7 @@ function renderAboutPage() {
                         ${aboutNumber('▣', state.settings.about_stat_1_label || 'Фотосессий проведено', state.settings.about_stat_1_value || '350+')}
                         ${aboutNumber('□', state.settings.about_stat_2_label || 'Лет в фотографии', state.settings.about_stat_2_value || '7+')}
                         ${aboutNumber('☺', state.settings.about_stat_3_label || 'Довольных клиентов', state.settings.about_stat_3_value || '1000+')}
-                        ${aboutNumber('⌖', state.settings.about_stat_4_label || 'Город съемки', state.settings.about_stat_4_value || 'Москва и МО')}
+                        ${aboutNumber('⌖', state.settings.about_stat_4_label || 'Город съемки', state.settings.about_stat_4_value || 'Чебоксары')}
                     </div>
                 </div>
             </div>
@@ -843,24 +908,68 @@ function renderCertificatePage() {
     const deliveries = state.certificateDeliveryOptions.length
         ? state.certificateDeliveryOptions
         : [{ id: 1, icon: '✉', title: 'Электронный', description: 'Файл сертификата придет на e-mail' }];
+    const displayCards = [
+        { title: '3 000 ₽', amount: 3000, tone: 'light', text: 'Подарочный сертификат на любую услугу фотостудии' },
+        { title: '6 000 ₽', amount: 6000, tone: 'dark', text: 'Подарочный сертификат на любую услугу фотостудии' },
+        { title: '10 000 ₽', amount: 10000, tone: 'warm', text: 'Подарочный сертификат на любую услугу фотостудии' },
+        { title: 'Свободный номинал', amount: defaultAmount, tone: 'black', text: 'Укажите любую сумму, а мы сделаем все остальное' }
+    ];
 
     app.innerHTML = `
-        <section class="certificate-hero">
-            <div class="certificate-hero-inner">
-                <div class="breadcrumbs dark">
-                    <a href="#home">Главная</a><span>›</span><strong>Сертификаты</strong>
+        <section class="certificate-showcase">
+            <div class="certificate-showcase-hero">
+                <div class="certificate-showcase-copy">
+                    <h1>Подарочные сертификаты</h1>
+                    <p>Идеальный подарок для ваших близких.<br>Выберите подходящий сертификат и подарите яркие эмоции!</p>
+                    <div class="certificate-showcase-actions">
+                        <button class="btn accent" type="button" data-scroll-certificate-form>Выбрать сертификат</button>
+                        <span class="delivery-note"><b>□</b> Доставка на e-mail<br><small>или в подарочной упаковке</small></span>
+                    </div>
                 </div>
-                <h1>Подарочные сертификаты</h1>
-                <p>Идеальный подарок для ваших близких</p>
-                <div class="certificate-benefits">
-                    ${serviceMini('□', 'Оригинальный подарок', 'Подарите эмоции и незабываемые впечатления')}
-                    ${serviceMini('▣', 'Удобно и просто', 'Выберите дизайн, номинал и получите сертификат онлайн')}
-                    ${serviceMini('◷', 'Действует 6 месяцев', 'Достаточно времени, чтобы выбрать удобное время')}
+                <div class="certificate-hero-card">
+                    <span>PHOTO STUDIO</span>
+                    <strong>Подарочный<br>сертификат</strong>
+                    <small>для особенного момента</small>
                 </div>
             </div>
+            <div class="certificate-showcase-benefits">
+                ${serviceMini('□', 'Любая сумма', 'Выберите номинал на свой вкус')}
+                ${serviceMini('◷', 'Действует 6 месяцев', 'Достаточно времени, чтобы выбрать дату')}
+                ${serviceMini('◇', 'Персональное поздравление', 'Добавьте теплые слова для получателя')}
+                ${serviceMini('ϟ', 'Быстро и удобно', 'Электронный сертификат придет за пару минут')}
+            </div>
+            <div class="certificate-pick-head">
+                <h2>Выберите сертификат</h2>
+                <div class="certificate-tabs mini">
+                    <button type="button" class="active" data-cert-tab="amount">Сертификаты на сумму</button>
+                    <button type="button" data-cert-tab="service">Сертификаты на услуги</button>
+                </div>
+            </div>
+            <div class="certificate-card-grid">
+                ${displayCards.map((card) => `
+                    <article class="certificate-product-card ${esc(card.tone)}">
+                        <div class="certificate-product-art">
+                            <span>Подарочный<br>сертификат</span>
+                        </div>
+                        <div>
+                            <h3>${esc(card.title)}</h3>
+                            <p>${esc(card.text)}</p>
+                            <button class="btn ghost" type="button" data-cert-amount="${card.amount}" data-cert-title-value="${esc(card.title)}" data-cert-type="amount">Выбрать</button>
+                        </div>
+                    </article>
+                `).join('')}
+            </div>
         </section>
-        <section class="page certificate-page">
-            <form class="certificate-form panel" id="certificateForm">
+        <section class="modal certificate-purchase-modal" id="certificatePurchaseModal" hidden>
+            <div class="modal-panel certificate-purchase-panel">
+                <button class="modal-close" type="button" data-close-modal aria-label="Закрыть">×</button>
+                <div class="certificate-purchase-head">
+                    <span>Покупка сертификата</span>
+                    <h2>Оформите подарок за пару минут</h2>
+                    <p>Выберите номинал, дизайн и оставьте пожелание для получателя.</p>
+                </div>
+                <div class="certificate-page">
+                    <form class="certificate-form panel" id="certificateForm">
                 <div class="certificate-tabs">
                     <button type="button" class="active" data-cert-tab="amount">На сумму</button>
                     <button type="button" data-cert-tab="service">На услугу</button>
@@ -901,8 +1010,8 @@ function renderCertificatePage() {
                     </div>
                     <button class="btn accent" type="submit">Добавить в корзину</button>
                 </div>
-            </form>
-            <aside class="certificate-preview panel">
+                    </form>
+                    <aside class="certificate-preview panel">
                 <h2>Предпросмотр</h2>
                 <div class="certificate-card-preview">
                     <span>PHOTO STUDIO</span>
@@ -919,7 +1028,9 @@ function renderCertificatePage() {
                     <li>На аренду студии и оборудования</li>
                 </ul>
                 <div class="bonus"><strong>Хотите сделать сюрприз?</strong><br>Оставьте поле получателя пустым, и мы отправим сертификат вам.</div>
-            </aside>
+                    </aside>
+                </div>
+            </div>
         </section>
         ${renderCta('Нужна помощь с выбором?', 'Мы поможем подобрать идеальный сертификат для вашего случая')}
         ${renderFooter()}
@@ -951,17 +1062,63 @@ function deliveryOption(icon, title, text, active = false) {
 function applyCertificateMode(mode) {
     const form = document.querySelector('#certificateForm');
     if (!form) return;
+    document.querySelectorAll('[data-cert-tab]').forEach((button) => {
+        button.classList.toggle('active', button.dataset.certTab === mode);
+    });
     document.querySelectorAll('[data-cert-amount]').forEach((button) => {
         const visible = (button.dataset.certType || 'amount') === mode;
         button.hidden = !visible;
         if (!visible) button.classList.remove('active');
     });
     const first = document.querySelector(`[data-cert-amount]:not([hidden])`);
-    if (first) first.click();
+    if (first) setCertificateSelection(first);
     const title = mode === 'service' ? 'Сертификат на услугу' : 'Сертификат на сумму';
     form.querySelector('h2').textContent = title;
     const customAmount = form.querySelector('[name="customAmount"]')?.closest('label');
     if (customAmount) customAmount.hidden = mode === 'service';
+}
+
+function setCertificateSelection(button, openModal = false) {
+    if (!button) return;
+    const amount = Number(button.dataset.certAmount);
+    const type = button.dataset.certType || 'amount';
+    const label = type === 'service' ? button.dataset.certTitleValue : (button.dataset.certTitleValue || money(amount));
+    document.querySelectorAll('[data-cert-amount]').forEach((item) => item.classList.toggle('active', item === button));
+    const amountInput = document.querySelector('[data-certificate-amount]');
+    const total = document.querySelector('[data-cert-total]');
+    const preview = document.querySelector('[data-cert-preview]');
+    const title = document.querySelector('[data-cert-title]');
+    const previewTitle = document.querySelector('.certificate-preview h2');
+    const formTitle = document.querySelector('#certificateForm h2');
+    if (amountInput) amountInput.value = amount;
+    if (total) total.textContent = money(amount);
+    if (preview) preview.textContent = label;
+    if (title) title.textContent = label;
+    if (previewTitle) previewTitle.innerHTML = `${type === 'service' ? 'Сертификат на услугу' : 'Сертификат на сумму'}<br><span data-cert-title>${esc(label)}</span>`;
+    if (formTitle) formTitle.textContent = type === 'service' ? 'Сертификат на услугу' : 'Сертификат на сумму';
+    if (openModal) openCertificatePurchaseModal();
+}
+
+function setCertificateCustomAmount(input) {
+    const amount = Number(input.value || 0);
+    if (!amount || amount < 1000) return;
+    document.querySelectorAll('[data-cert-amount]').forEach((item) => item.classList.remove('active'));
+    const amountInput = document.querySelector('[data-certificate-amount]');
+    const total = document.querySelector('[data-cert-total]');
+    const preview = document.querySelector('[data-cert-preview]');
+    const title = document.querySelector('[data-cert-title]');
+    const label = money(amount);
+    if (amountInput) amountInput.value = amount;
+    if (total) total.textContent = label;
+    if (preview) preview.textContent = label;
+    if (title) title.textContent = label;
+}
+
+function openCertificatePurchaseModal() {
+    const modal = document.querySelector('#certificatePurchaseModal');
+    if (!modal) return;
+    modal.hidden = false;
+    modal.querySelector('#certificateForm button, #certificateForm input:not([type="hidden"]), #certificateForm textarea')?.focus({ preventScroll: true });
 }
 
 async function renderProfilePage() {
@@ -972,7 +1129,10 @@ async function renderProfilePage() {
     }
 
     const profileParams = new URLSearchParams(location.hash.split('?')[1] || '');
-    const profileSection = profileParams.get('section') || 'info';
+    const requestedProfileSection = profileParams.get('section') || 'info';
+    const profileSection = ['info', 'bookings', 'certificates', 'favorites', 'reviews', 'chat'].includes(requestedProfileSection)
+        ? requestedProfileSection
+        : 'info';
     const profileActive = (section) => section === profileSection ? 'active' : '';
     app.innerHTML = '<section class="page"><p class="lead">Загружаю профиль...</p></section>';
     const [me, bookings, certificates, messages, myReviews, favorites] = await Promise.all([
@@ -988,18 +1148,24 @@ async function renderProfilePage() {
     const safeFavorites = asArray(favorites);
     let profileMessages = asArray(messages);
     let profileChatBody = `
-        <h2>Чат с фотографом</h2>
+        <div class="chat-head">
+            <div>
+                <h2>Чат с фотографом</h2>
+                <p class="muted">Задайте вопрос по образу, локации, животным или подготовке к съемке.</p>
+            </div>
+            <span>Обычно отвечаю в течение дня</span>
+        </div>
         <div class="chat-messages">
             ${profileMessages.length ? profileMessages.map((item) => `
                 <article class="${Number(item.sender_id) === Number(me.id) ? 'mine' : ''}">
-                    <strong>${esc(item.sender_name || 'Сообщение')}</strong>
+                    <strong>${esc(Number(item.sender_id) === Number(me.id) ? 'Вы' : (item.sender_name || 'Фотограф'))}</strong>
                     <p>${esc(item.message)}</p>
                     <small>${new Date(item.created_at).toLocaleString('ru-RU')}</small>
                 </article>
-            `).join('') : '<p class="muted">Сообщений пока нет.</p>'}
+            `).join('') : '<div class="chat-empty"><strong>Сообщений пока нет</strong><p>Напишите первый вопрос, и он появится здесь.</p></div>'}
         </div>
         <form class="chat-form" id="chatForm">
-            <textarea name="message" rows="3" placeholder="Напишите сообщение фотографу" required></textarea>
+            <textarea name="message" rows="2" placeholder="Напишите сообщение фотографу" required></textarea>
             <button class="btn accent" type="submit">Отправить</button>
         </form>
     `;
@@ -1015,36 +1181,51 @@ async function renderProfilePage() {
     }
     state.favoriteServices = safeFavorites;
     localStorage.setItem('photoUser', JSON.stringify(me));
+    const unreadCount = profileMessages.filter((item) => Number(item.sender_id) !== Number(me.id) && !item.read_at).length;
+    const upcomingCount = asArray(bookings).filter((item) => !['cancelled', 'done'].includes(item.status)).length;
+    const certificateTotal = asArray(certificates).reduce((total, item) => total + Number(item.amount || 0), 0);
+    const profileSectionAttr = (section) => section === profileSection ? '' : ' hidden';
     app.innerHTML = `
         <section class="profile-layout">
             <aside class="profile-sidebar">
-                <a class="profile-logo" href="#home"><span>▣</span><strong>PhotoStudio</strong></a>
+                <a class="profile-logo" href="#home"><span>PS</span><strong>PHOTO STUDIO</strong></a>
                 <nav>
-                    <a class="${profileActive('info')}" href="#profile?section=info"><span>♙</span>Профиль</a>
-                    <a class="${profileActive('bookings')}" href="#profile?section=bookings"><span>▣</span>Мои записи</a>
-                    <a class="${profileActive('certificates')}" href="#profile?section=certificates"><span>□</span>Мои сертификаты</a>
-                    <a class="${profileActive('settings')}" href="#profile?section=settings"><span>⚙</span>Настройки профиля</a>
-                    <a class="${profileActive('reviews')}" href="#profile?section=reviews"><span>☆</span>Мои отзывы</a>
-                    <a class="${profileActive('favorites')}" href="#profile?section=favorites"><span>♡</span>Мои избранные услуги</a>
-                    <a class="${profileActive('chat')}" href="#profile?section=chat"><span>▱</span>Чат</a>
+                    <a class="${profileActive('info')}" href="#profile?section=info"><span>♙</span>Данные</a>
+                    <a class="${profileActive('bookings')}" href="#profile?section=bookings"><span>▣</span>Записи</a>
+                    <a class="${profileActive('certificates')}" href="#profile?section=certificates"><span>□</span>Сертификаты</a>
+                    <a class="${profileActive('favorites')}" href="#profile?section=favorites"><span>♡</span>Избранное</a>
+                    <a class="${profileActive('reviews')}" href="#profile?section=reviews"><span>☆</span>Отзывы</a>
+                    <a class="${profileActive('chat')}" href="#profile?section=chat"><span>▱</span>Чат${unreadCount ? `<b>${unreadCount}</b>` : ''}</a>
                 </nav>
-                <button class="profile-logout" type="button" data-logout><span>↪</span>Выйти</button>
+                <button class="profile-logout" type="button" data-logout>Выйти</button>
             </aside>
             <div class="profile-main">
                 <header class="profile-top">
-                    <h1>Профиль</h1>
-                    <div>
-                        <span class="profile-bell">♢<b>${profileMessages.filter((item) => Number(item.sender_id) !== Number(me.id) && !item.read_at).length}</b></span>
+                    <div class="profile-hero-user">
                         <img src="${esc(me.avatar_url || fallbackImage())}" alt="${esc(me.name || 'Профиль')}">
-                        <strong>${esc(me.name || 'Клиент')}</strong>
+                        <div>
+                            <p class="eyebrow">Личный кабинет</p>
+                            <h1>${esc(me.name || 'Клиент')}</h1>
+                            <span>${esc(me.email || '')}${me.phone ? ` · ${esc(me.phone)}` : ''}</span>
+                        </div>
+                    </div>
+                    <div class="profile-hero-actions">
+                        <a class="btn ghost" href="#services">Выбрать услугу</a>
+                        <button class="btn accent" type="button" data-open-booking>Записаться</button>
                     </div>
                 </header>
-                <section class="profile-cards" id="profile-info">
+                <section class="profile-stats">
+                    ${profileStat('Записи', upcomingCount, 'активных')}
+                    ${profileStat('Сертификаты', certificates.length, certificateTotal ? money(certificateTotal) : 'нет покупок')}
+                    ${profileStat('Избранное', safeFavorites.length, 'услуг')}
+                    ${profileStat('Сообщения', unreadCount, 'новых')}
+                </section>
+                <section class="profile-cards profile-section" id="profile-info"${profileSectionAttr('info')}>
                     <form class="profile-panel profile-user-card" id="profileForm">
                         <h2>Личные данные</h2>
                         <div class="profile-avatar">
                             <img src="${esc(me.avatar_url || fallbackImage())}" alt="${esc(me.name || 'Профиль')}">
-                            <label class="btn ghost">Изменить фото<input type="file" name="avatarFile" accept="image/*" hidden></label>
+                            <label class="btn ghost">Загрузить фото<input type="file" name="avatarFile" accept="image/*" hidden></label>
                         </div>
                         <div class="profile-fields">
                             <label>Имя<input name="name" value="${esc(me.name || '')}" required></label>
@@ -1061,35 +1242,72 @@ async function renderProfilePage() {
                         <button class="btn ghost" type="submit">Поменять пароль</button>
                     </form>
                 </section>
-                <section class="profile-panel" id="profile-bookings">
-                    <h2>Мои записи</h2>
-                    ${bookings.length ? bookingTable(bookings, true) : '<p class="muted">Записей пока нет.</p>'}
+                <section class="profile-panel profile-section" id="profile-bookings"${profileSectionAttr('bookings')}>
+                    <div class="profile-panel-head">
+                        <div>
+                            <h2>Мои записи</h2>
+                            <p class="muted">Все будущие и прошлые съемки в одном месте.</p>
+                        </div>
+                        <button class="btn accent" type="button" data-open-booking>Новая запись</button>
+                    </div>
+                    ${bookings.length ? bookingTable(bookings, true) : profileEmpty('Записей пока нет', 'Выберите услугу и забронируйте удобное время.', '#services', 'Выбрать услугу')}
                 </section>
-                <section class="profile-panel" id="profile-certificates">
-                    <h2>Мои сертификаты</h2>
-                    ${certificates.length ? certificateProfileList(certificates) : '<p class="muted">Сертификатов пока нет.</p>'}
+                <section class="profile-panel profile-section" id="profile-certificates"${profileSectionAttr('certificates')}>
+                    <div class="profile-panel-head">
+                        <div>
+                            <h2>Мои сертификаты</h2>
+                            <p class="muted">Здесь отображаются сертификаты, оформленные на ваш аккаунт или email.</p>
+                        </div>
+                        <a class="btn ghost" href="#certificate">Купить сертификат</a>
+                    </div>
+                    ${certificates.length ? certificateProfileList(certificates) : profileEmpty('Сертификатов пока нет', 'Оформите подарочный сертификат для себя или близких.', '#certificate', 'Выбрать сертификат')}
                 </section>
-                <section class="profile-panel" id="profile-settings">
-                    <h2>Настройки профиля</h2>
-                    <p class="muted">Личные данные, фото и пароль редактируются в верхнем блоке профиля.</p>
-                </section>
-                <section class="profile-panel" id="profile-reviews">
-                    <h2>Мои отзывы</h2>
+                <section class="profile-panel profile-section" id="profile-reviews"${profileSectionAttr('reviews')}>
+                    <div class="profile-panel-head">
+                        <div>
+                            <h2>Мои отзывы</h2>
+                            <p class="muted">Ваши опубликованные отзывы об услугах.</p>
+                        </div>
+                    </div>
                     ${safeReviews.length ? `<div class="review-grid">${safeReviews.map((review) => reviewCard({ ...review, user_name: me.name, avatar_url: me.avatar_url })).join('')}</div>` : '<p class="muted">Вы пока не оставляли отзывы.</p>'}
                 </section>
-                <section class="profile-panel" id="profile-favorites">
-                    <h2>Мои избранные услуги</h2>
-                    ${safeFavorites.length ? `<div class="grid">${safeFavorites.map(serviceCard).join('')}</div>` : '<p class="muted">Добавьте услуги в избранное со страницы услуг.</p>'}
+                <section class="profile-panel profile-section" id="profile-favorites"${profileSectionAttr('favorites')}>
+                    <div class="profile-panel-head">
+                        <div>
+                            <h2>Избранные услуги</h2>
+                            <p class="muted">То, что вы сохранили для будущей записи.</p>
+                        </div>
+                        <a class="btn ghost" href="#services">Все услуги</a>
+                    </div>
+                    ${safeFavorites.length ? `<div class="grid">${safeFavorites.map(serviceCard).join('')}</div>` : profileEmpty('В избранном пусто', 'Добавьте понравившиеся услуги со страницы услуг.', '#services', 'Перейти к услугам')}
                 </section>
-                <section class="profile-panel profile-chat" id="profile-chat">
+                <section class="profile-panel profile-chat profile-section" id="profile-chat"${profileSectionAttr('chat')}>
                     ${profileChatBody}
                 </section>
             </div>
         </section>
     `;
-    const sectionTarget = document.querySelector(`#profile-${profileSection}`);
-    if (sectionTarget) sectionTarget.scrollIntoView({ block: 'start' });
     scrollChatToBottom();
+}
+
+function profileStat(title, value, text) {
+    return `
+        <article>
+            <span>${esc(title)}</span>
+            <strong>${esc(String(value))}</strong>
+            <small>${esc(text)}</small>
+        </article>
+    `;
+}
+
+function profileEmpty(title, text, href, action) {
+    return `
+        <div class="profile-empty">
+            <strong>${esc(title)}</strong>
+            <p>${esc(text)}</p>
+            <a class="btn ghost" href="${esc(href)}">${esc(action)}</a>
+        </div>
+    `;
 }
 
 async function renderFavoritesPage() {
@@ -1213,11 +1431,13 @@ async function loadAdminContext(section) {
 
     if (section === 'services') {
         context.services = await api('/api/admin/services');
+        state.adminServices = asArray(context.services);
         return context;
     }
 
     if (section === 'addons') {
         context.addons = await api('/api/admin/addons');
+        state.adminAddons = asArray(context.addons);
         return context;
     }
 
@@ -1368,6 +1588,115 @@ function renderAdminChat(clients = [], messages = [], selectedClientId = null, t
     `;
 }
 
+function adminEditorSection(icon, title, content) {
+    return `
+        <section class="admin-editor-section">
+            <div class="admin-editor-section-title">
+                <span>${esc(icon)}</span>
+                <strong>${esc(title)}</strong>
+            </div>
+            ${content}
+        </section>
+    `;
+}
+
+function adminPhotoPanel(item = {}, multiple = false) {
+    return `
+        <aside class="admin-photo-panel">
+            <section class="admin-editor-section">
+                <div class="admin-editor-section-title">
+                    <span>□</span>
+                    <strong>Фотографии ${multiple ? 'услуги' : 'записи'}</strong>
+                </div>
+                <label class="admin-upload-zone" data-upload-zone>
+                    <input type="file" name="${multiple ? 'imageFiles' : 'imageFile'}" accept="image/*" ${multiple ? 'multiple' : ''}>
+                    <span>⌁</span>
+                    <strong>Перетащите изображения сюда<br>или выберите файл</strong>
+                    <small>JPG, PNG, WEBP. ${multiple ? 'Можно выбрать несколько файлов.' : 'Одно основное изображение.'}</small>
+                </label>
+                <div class="admin-selected-files" data-file-list hidden></div>
+                ${item.image_url ? `
+                    <img class="admin-photo-preview" src="${esc(item.image_url)}" alt="${esc(item.title || 'Фото')}">
+                    <input type="hidden" name="imageUrl" value="${esc(item.image_url || '')}">
+                ` : ''}
+                ${multiple ? '<p class="muted">Первое выбранное фото станет главным фото услуги. Все выбранные фото добавятся в портфолио этой категории.</p>' : ''}
+            </section>
+            ${item.id ? `
+                <section class="admin-meta-card">
+                    <p><span>ID</span><strong>#${item.id}</strong></p>
+                    <p><span>Статус</span><strong>${activeBool(item.is_active) ? 'Активная' : 'Неактивная'}</strong></p>
+                </section>
+            ` : ''}
+        </aside>
+    `;
+}
+
+function adminServiceEditor(service = {}, mode = 'edit', inModal = false) {
+    const isNew = mode === 'create';
+    const active = activeBool(service.is_active);
+    return `
+        <form class="admin-editor-form" ${isNew ? 'id="adminServiceForm"' : `data-admin-edit="service" data-id="${service.id}"`} ${isNew && !inModal ? 'hidden' : ''}>
+            <div class="admin-editor-main">
+                ${adminEditorSection('□', 'Основная информация', `
+                    <div class="admin-editor-grid">
+                        <label>Название услуги <b>*</b><input name="title" value="${esc(service.title || '')}" placeholder="Индивидуальная фотосессия" required></label>
+                        <label>Категория <b>*</b>${categorySelect('category', service.category || '')}</label>
+                        <label>Статус <b>*</b><select name="isActive">
+                            <option value="true" ${active ? 'selected' : ''}>Активная</option>
+                            <option value="false" ${!active ? 'selected' : ''}>Неактивная</option>
+                        </select></label>
+                        <label>Цена <b>*</b><input type="number" name="price" value="${esc(service.price || '')}" placeholder="3000" required></label>
+                        <label class="wide">Описание<textarea name="description" rows="4" maxlength="1000" placeholder="Коротко опишите услугу">${esc(service.description || '')}</textarea></label>
+                    </div>
+                `)}
+                ${adminEditorSection('◷', 'Параметры съемки', `
+                    <div class="admin-editor-grid three">
+                        <label>Длительность <b>*</b><input name="serviceDurationText" value="${esc(service.service_duration_text || '')}" placeholder="1 ч."></label>
+                        <label>Количество фото<input name="photoCountText" value="${esc(service.photo_count_text || '')}" placeholder="От 50"></label>
+                        <label>Готовность фото <b>*</b><input name="photoDeliveryText" value="${esc(service.photo_delivery_text || '')}" placeholder="1-3 дня"></label>
+                        <input type="hidden" name="durationHours" value="${esc(service.duration_hours || 1)}">
+                    </div>
+                `)}
+                ${adminEditorSection('⌖', 'Локация и рекомендации', `
+                    <div class="admin-editor-grid">
+                        <label>Студия / Локация <b>*</b><input name="serviceLocation" value="${esc(service.service_location || '')}" placeholder="Студия Light"></label>
+                        <label class="wide">Рекомендации клиенту<textarea name="serviceRecommendations" rows="3" maxlength="500" placeholder="Рекомендуем взять 2-3 образа...">${esc(service.service_recommendations || '')}</textarea></label>
+                    </div>
+                `)}
+            </div>
+            ${adminPhotoPanel(service, true)}
+            <div class="admin-editor-actions">
+                ${!isNew ? `<button class="btn ghost" type="button" data-admin-toggle-service="${service.id}" data-active="${active ? 'false' : 'true'}">${active ? 'Сделать неактивной' : 'Сделать активной'}</button>` : '<span></span>'}
+                <span class="muted">Изменения сразу отображаются на сайте.</span>
+                <button class="btn accent" type="submit">${isNew ? 'Добавить услугу' : 'Сохранить изменения'}</button>
+            </div>
+        </form>
+    `;
+}
+
+function adminAddonEditor(addon = {}, mode = 'edit', inModal = false) {
+    const isNew = mode === 'create';
+    return `
+        <form class="admin-editor-form addon-editor-form" ${isNew ? 'id="adminAddonForm"' : `data-admin-edit="addon" data-id="${addon.id}"`} ${isNew && !inModal ? 'hidden' : ''}>
+            <div class="admin-editor-main">
+                ${adminEditorSection('□', 'Основная информация', `
+                    <div class="admin-editor-grid">
+                        <label>Название <b>*</b><input name="title" value="${esc(addon.title || '')}" placeholder="Срочная обработка" required></label>
+                        <label>Цена <b>*</b><input type="number" name="price" value="${esc(addon.price || '')}" placeholder="2500" required></label>
+                        <label class="wide">Описание<textarea name="description" rows="4" maxlength="1000" placeholder="Опишите дополнительную услугу">${esc(addon.description || '')}</textarea></label>
+                    </div>
+                `)}
+            </div>
+            ${adminPhotoPanel(addon, false)}
+            <div class="admin-editor-actions">
+                ${!isNew ? `<button class="btn ghost" type="button" data-admin-delete="addon" data-id="${addon.id}">Скрыть</button>` : '<span></span>'}
+                <span class="muted">Дополнительная услуга появится в разделе и в форме записи.</span>
+                <button class="btn accent" type="submit">${isNew ? 'Добавить доп. услугу' : 'Сохранить изменения'}</button>
+            </div>
+        </form>
+    `;
+}
+
 function renderAdminSection(section, { bookings = [], services = [], addons = [], certificates = [], schedule = [], portfolio = [], certificateProducts = [], certificateDesigns = [], certificateDeliveryOptions = [], serviceTimeSlots = [], chatClients = [], chatMessages = [], selectedClientId = null }) {
     if (section === 'chat') {
         return renderAdminChat(chatClients, chatMessages, selectedClientId);
@@ -1405,20 +1734,7 @@ function renderAdminSection(section, { bookings = [], services = [], addons = []
                     <button class="btn accent" type="button" data-open-admin-create="service">+ Добавить услугу</button>
                 </div>
 
-                <form class="admin-create-row" id="adminServiceForm" hidden>
-                    <input name="title" placeholder="Название" required>
-                    <input type="number" name="price" placeholder="Цена" required>
-                    ${categorySelect('category', '')}
-                    <input type="number" name="durationHours" value="1" min="1" placeholder="Часы">
-                    <input type="file" name="imageFile" accept="image/*">
-                    <textarea name="description" rows="2" placeholder="Описание"></textarea>
-                    <input name="serviceDurationText" placeholder="Длительность, например 1-1,5 часа">
-                    <input name="photoDeliveryText" placeholder="Готовность фото, например 7-10 дней">
-                    <input name="photoCountText" placeholder="Количество фото, например от 50 штук">
-                    <input name="serviceLocation" placeholder="Локация, например Студия / Улица">
-                    <textarea name="serviceRecommendations" rows="2" placeholder="Рекомендации"></textarea>
-                    <button class="btn accent" type="submit">Сохранить</button>
-                </form>
+                ${adminServiceEditor({}, 'create')}
                 <div class="admin-table-wrap">
                     <table class="admin-data-table" data-admin-table="services">
                         <thead>
@@ -1457,19 +1773,7 @@ function renderAdminSection(section, { bookings = [], services = [], addons = []
                     <button class="btn ghost" type="button" data-admin-export="addons">⇩ Экспорт</button>
                     <button class="btn accent" type="button" data-open-admin-create="addon">+ Добавить доп. услугу</button>
                 </div>
-                <form class="admin-create-row" id="adminAddonForm" hidden>
-                    <input name="title" placeholder="Название" required>
-                    <input type="number" name="price" placeholder="Цена" required>
-                    ${categorySelect('category', 'Доп. услуги')}
-                    <input type="file" name="imageFile" accept="image/*">
-                    <textarea name="description" rows="2" placeholder="Описание"></textarea>
-                    <input name="serviceDurationText" placeholder="Длительность, например 1-1,5 часа">
-                    <input name="photoDeliveryText" placeholder="Готовность фото, например 7-10 дней">
-                    <input name="photoCountText" placeholder="Количество фото, например от 50 штук">
-                    <input name="serviceLocation" placeholder="Локация, например Студия / Улица">
-                    <textarea name="serviceRecommendations" rows="2" placeholder="Рекомендации"></textarea>
-                    <button class="btn accent" type="submit">Сохранить</button>
-                </form>
+                ${adminAddonEditor({}, 'create')}
                 <div class="admin-table-wrap">
                     <table class="admin-data-table" data-admin-table="addons">
                         <thead>
@@ -1535,7 +1839,9 @@ function renderAdminSection(section, { bookings = [], services = [], addons = []
                 ${adminStat('Сумма оплат', purchased.reduce((sum, item) => sum + Number(item.amount || 0), 0))}
             </section>
 
-            ${adminCertificateCatalog(certificateProducts, certificateDesigns, certificateDeliveryOptions)}
+            <div class="admin-certificate-layout">
+                ${adminCertificateCatalog(certificateProducts, certificateDesigns, certificateDeliveryOptions)}
+            </div>
 
             <section class="admin-table-panel panel">
                 <div class="admin-toolbar certificates-toolbar">
@@ -1602,30 +1908,49 @@ function renderAdminSection(section, { bookings = [], services = [], addons = []
     }
 
     if (section === 'schedule') {
+        const dayOrder = [1, 2, 3, 4, 5, 6, 0];
+        const scheduleByDay = new Map(schedule.map((day) => [Number(day.day_of_week), day]));
         return `
-            <section class="admin-section panel">
-                <h2>График работы</h2>
-                <div class="admin-list">
-                    ${schedule.map((day) => `
-                        <form class="admin-edit-card" data-admin-edit="schedule" data-id="${day.day_of_week}">
-                            <strong>${dayName(day.day_of_week)}</strong>
-                            <div class="admin-edit-grid">
-                                <label>Рабочий день<select name="isWorking">
+            <section class="admin-section panel admin-schedule-panel">
+                <div class="admin-section-title">
+                    <div>
+                        <h2>График работы</h2>
+                        <p class="muted">Настройте рабочие дни и базовые часы записи.</p>
+                    </div>
+                    <span>${schedule.filter((day) => day.is_working).length} рабочих дней</span>
+                </div>
+                <div class="admin-schedule-grid">
+                    ${dayOrder.map((dayNumber) => {
+                        const day = scheduleByDay.get(dayNumber) || { day_of_week: dayNumber, is_working: false, start_time: '10:00', end_time: '18:00' };
+                        return `
+                        <form class="admin-schedule-card ${day.is_working ? 'working' : 'closed'}" data-admin-edit="schedule" data-id="${day.day_of_week}">
+                            <div class="admin-schedule-card-head">
+                                <strong>${dayName(day.day_of_week)}</strong>
+                                <span class="admin-pill ${day.is_working ? 'active' : 'inactive'}">${day.is_working ? 'Открыто' : 'Выходной'}</span>
+                            </div>
+                            <div class="admin-schedule-fields">
+                                <label>День<select name="isWorking">
                                     <option value="true" ${day.is_working ? 'selected' : ''}>Да</option>
                                     <option value="false" ${!day.is_working ? 'selected' : ''}>Нет</option>
                                 </select></label>
                                 <label>Начало<input type="time" name="startTime" value="${String(day.start_time).slice(0, 5)}"></label>
                                 <label>Конец<input type="time" name="endTime" value="${String(day.end_time).slice(0, 5)}"></label>
                             </div>
-                            <button class="btn accent" type="submit">Сохранить</button>
+                            <button class="btn ghost" type="submit">Сохранить</button>
                         </form>
-                    `).join('')}
+                    `; }).join('')}
                 </div>
             </section>
-            <section class="admin-section panel">
-                <h2>Окна времени по услугам</h2>
-                <form class="admin-edit-card" id="adminServiceSlotForm">
-                    <div class="admin-edit-grid">
+            <section class="admin-section panel admin-slot-panel">
+                <div class="admin-section-title">
+                    <div>
+                        <h2>Окна времени по услугам</h2>
+                        <p class="muted">Если у услуги отдельное расписание, оно будет важнее общего графика.</p>
+                    </div>
+                    <span>${serviceTimeSlots.length} окон</span>
+                </div>
+                <form class="admin-slot-form" id="adminServiceSlotForm">
+                    <div class="admin-slot-fields">
                         <label>Услуга<select name="serviceId" required>
                             <option value="">Выберите услугу</option>
                             ${services.map((service) => `<option value="${service.id}">${esc(service.title)}</option>`).join('')}
@@ -1638,14 +1963,16 @@ function renderAdminSection(section, { bookings = [], services = [], addons = []
                     </div>
                     <button class="btn accent" type="submit">Добавить окно</button>
                 </form>
-                <div class="admin-list">
+                <div class="admin-slot-list">
                     ${serviceTimeSlots.length ? serviceTimeSlots.map((slot) => `
-                        <article class="admin-edit-card">
-                            <strong>${esc(slot.service_title)} · ${dayName(slot.day_of_week)}</strong>
-                            <p class="muted">${String(slot.start_time).slice(0, 5)} - ${String(slot.end_time).slice(0, 5)}</p>
-                            <button class="btn ghost" type="button" data-admin-delete="serviceSlot" data-id="${slot.id}">Удалить</button>
+                        <article class="admin-slot-card">
+                            <div>
+                                <strong>${esc(slot.service_title)}</strong>
+                                <span>${dayName(slot.day_of_week)} · ${String(slot.start_time).slice(0, 5)} - ${String(slot.end_time).slice(0, 5)}</span>
+                            </div>
+                            <button class="icon-mini" type="button" data-admin-delete="serviceSlot" data-id="${slot.id}" title="Удалить">×</button>
                         </article>
-                    `).join('') : '<p class="muted">Для услуг пока нет отдельных окон. Будет использоваться общий график выше.</p>'}
+                    `).join('') : '<div class="profile-empty"><strong>Отдельных окон пока нет</strong><p>Для услуг будет использоваться общий график выше.</p></div>'}
                 </div>
             </section>
         `;
@@ -1701,29 +2028,7 @@ function renderAdminSection(section, { bookings = [], services = [], addons = []
 }
 
 function adminServiceForm(service) {
-    return `
-        <form class="admin-edit-card" data-admin-edit="service" data-id="${service.id}">
-            <img src="${esc(service.image_url || fallbackImage())}" alt="${esc(service.title)}">
-            <div class="admin-edit-grid">
-                <label>Название<input name="title" value="${esc(service.title || '')}" required></label>
-                <label>Цена<input type="number" name="price" value="${esc(service.price || 0)}" required></label>
-                <label>Часы<input type="number" name="durationHours" value="${esc(service.duration_hours || 1)}" min="1"></label>
-                <label>Категория${categorySelect('category', service.category || '')}</label>
-                <label class="wide">Описание<textarea name="description" rows="2">${esc(service.description || '')}</textarea></label>
-                <label>Длительность<input name="serviceDurationText" value="${esc(service.service_duration_text || '')}" placeholder="1-1,5 часа"></label>
-                <label>Готовность фото<input name="photoDeliveryText" value="${esc(service.photo_delivery_text || '')}" placeholder="7-10 дней"></label>
-                <label>Количество фото<input name="photoCountText" value="${esc(service.photo_count_text || '')}" placeholder="от 50 штук"></label>
-                <label>Локация<input name="serviceLocation" value="${esc(service.service_location || '')}" placeholder="Студия / Улица"></label>
-                <label class="wide">Рекомендации<textarea name="serviceRecommendations" rows="2">${esc(service.service_recommendations || '')}</textarea></label>
-                <label>Новое фото<input type="file" name="imageFile" accept="image/*"></label>
-                <input type="hidden" name="imageUrl" value="${esc(service.image_url || '')}">
-            </div>
-            <div class="inline-actions">
-                <button class="btn accent" type="submit">Сохранить</button>
-                <button class="btn ghost" type="button" data-admin-delete="service" data-id="${service.id}">Скрыть</button>
-            </div>
-        </form>
-    `;
+    return adminServiceEditor(service, 'edit');
 }
 
 function adminServiceRow(service) {
@@ -1750,7 +2055,7 @@ function adminServiceRow(service) {
                 <div class="admin-row-actions">
                     <a class="icon-mini" href="#service-${service.id}" title="Посмотреть">◉</a>
                     <button class="icon-mini" type="button" data-admin-row-edit="service" data-id="${service.id}" title="Редактировать">✎</button>
-                    <button class="icon-mini" type="button" data-admin-delete="service" data-id="${service.id}" title="Скрыть">⋮</button>
+                    <button class="icon-mini" type="button" data-admin-toggle-service="${service.id}" data-active="${active ? 'false' : 'true'}" title="${active ? 'Сделать неактивной' : 'Сделать активной'}">⋮</button>
                 </div>
             </td>
         </tr>
@@ -1761,22 +2066,7 @@ function adminServiceRow(service) {
 }
 
 function adminAddonForm(addon) {
-    return `
-        <form class="admin-edit-card" data-admin-edit="addon" data-id="${addon.id}">
-            <img src="${esc(addon.image_url || fallbackImage())}" alt="${esc(addon.title)}">
-            <div class="admin-edit-grid">
-                <label>Название<input name="title" value="${esc(addon.title || '')}" required></label>
-                <label>Цена<input type="number" name="price" value="${esc(addon.price || 0)}" required></label>
-                <label class="wide">Описание<textarea name="description" rows="2">${esc(addon.description || '')}</textarea></label>
-                <label>Новое фото<input type="file" name="imageFile" accept="image/*"></label>
-                <input type="hidden" name="imageUrl" value="${esc(addon.image_url || '')}">
-            </div>
-            <div class="inline-actions">
-                <button class="btn accent" type="submit">Сохранить</button>
-                <button class="btn ghost" type="button" data-admin-delete="addon" data-id="${addon.id}">Скрыть</button>
-            </div>
-        </form>
-    `;
+    return adminAddonEditor(addon, 'edit');
 }
 
 function adminAddonRow(addon) {
@@ -1861,7 +2151,7 @@ function adminPortfolioRow(item) {
 
 function adminCertificateCatalog(products = [], designs = [], deliveryOptions = []) {
     return `
-        <section class="admin-table-panel panel">
+        <section class="admin-table-panel panel admin-catalog-panel">
             <div class="admin-section-title">
                 <h2>Варианты сертификатов</h2>
                 <span>${products.length} шт.</span>
@@ -1889,14 +2179,11 @@ function adminCertificateCatalog(products = [], designs = [], deliveryOptions = 
                     <textarea name="serviceRecommendations" rows="2" placeholder="Рекомендации"></textarea>
                 <button class="btn accent" type="submit">Сохранить</button>
             </form>
-            <div class="admin-table-wrap">
-                <table class="admin-data-table" data-admin-table="certificate-products">
-                    <thead><tr><th>Сертификат</th><th>Тип</th><th>Сумма</th><th>Порядок</th><th>Статус</th><th>Действия</th></tr></thead>
-                    <tbody>${products.map(adminCertificateProductRow).join('')}</tbody>
-                </table>
+            <div class="admin-compact-cards" data-admin-table="certificate-products">
+                ${products.length ? products.map(adminCertificateProductCard).join('') : '<p class="muted">Вариантов пока нет.</p>'}
             </div>
         </section>
-        <section class="admin-table-panel panel">
+        <section class="admin-table-panel panel admin-catalog-panel">
             <div class="admin-section-title"><h2>Дизайны сертификатов</h2><span>${designs.length} шт.</span></div>
             <div class="admin-toolbar">
                 <label class="admin-search"><span>⌕</span><input type="search" placeholder="Поиск по дизайнам..." data-admin-search="certificate-designs"></label>
@@ -1911,14 +2198,11 @@ function adminCertificateCatalog(products = [], designs = [], deliveryOptions = 
                 <input type="file" name="imageFile" accept="image/*">
                 <button class="btn accent" type="submit">Сохранить</button>
             </form>
-            <div class="admin-table-wrap">
-                <table class="admin-data-table" data-admin-table="certificate-designs">
-                    <thead><tr><th>Дизайн</th><th>Код</th><th>Тема</th><th>Порядок</th><th>Статус</th><th>Действия</th></tr></thead>
-                    <tbody>${designs.map(adminCertificateDesignRow).join('')}</tbody>
-                </table>
+            <div class="admin-compact-cards" data-admin-table="certificate-designs">
+                ${designs.length ? designs.map(adminCertificateDesignCard).join('') : '<p class="muted">Дизайнов пока нет.</p>'}
             </div>
         </section>
-        <section class="admin-table-panel panel">
+        <section class="admin-table-panel panel admin-catalog-panel">
             <div class="admin-section-title"><h2>Получение сертификата</h2><span>${deliveryOptions.length} шт.</span></div>
             <div class="admin-toolbar">
                 <label class="admin-search"><span>⌕</span><input type="search" placeholder="Поиск по способам..." data-admin-search="certificate-delivery"></label>
@@ -1937,13 +2221,76 @@ function adminCertificateCatalog(products = [], designs = [], deliveryOptions = 
                     <textarea name="serviceRecommendations" rows="2" placeholder="Рекомендации"></textarea>
                 <button class="btn accent" type="submit">Сохранить</button>
             </form>
-            <div class="admin-table-wrap">
-                <table class="admin-data-table" data-admin-table="certificate-delivery">
-                    <thead><tr><th>Способ</th><th>Иконка</th><th>Порядок</th><th>Статус</th><th>Действия</th></tr></thead>
-                    <tbody>${deliveryOptions.map(adminCertificateDeliveryRow).join('')}</tbody>
-                </table>
+            <div class="admin-compact-cards" data-admin-table="certificate-delivery">
+                ${deliveryOptions.length ? deliveryOptions.map(adminCertificateDeliveryCard).join('') : '<p class="muted">Способов пока нет.</p>'}
             </div>
         </section>
+    `;
+}
+
+function adminCertificateProductCard(product) {
+    const active = product.is_active !== false;
+    return `
+        <article class="admin-compact-card" data-admin-certificate-products-row data-title="${esc(product.title || '').toLowerCase()}" data-status="${active ? 'active' : 'inactive'}">
+            <div>
+                <span class="admin-card-kicker">${product.type === 'service' ? 'На услугу' : 'На сумму'} · ${Number(product.sort_order || 0)}</span>
+                <strong>${esc(product.title)}</strong>
+                <p>${esc(product.description || 'Без описания')}</p>
+            </div>
+            <div class="admin-compact-meta">
+                <b>${money(product.amount)}</b>
+                <span class="admin-pill ${active ? 'active' : 'inactive'}">${active ? 'Активный' : 'Скрытый'}</span>
+            </div>
+            <div class="admin-row-actions">
+                <button class="icon-mini" type="button" data-admin-row-edit="certificateProduct" data-id="${product.id}" title="Редактировать">✎</button>
+                <button class="icon-mini" type="button" data-admin-delete="certificateProduct" data-id="${product.id}" title="Скрыть">⋮</button>
+            </div>
+            <div class="admin-compact-editor" data-admin-editor="certificateProduct-${product.id}" hidden>${adminCertificateProductForm(product)}</div>
+        </article>
+    `;
+}
+
+function adminCertificateDesignCard(design) {
+    const active = design.is_active !== false;
+    return `
+        <article class="admin-compact-card design" data-admin-certificate-designs-row data-title="${esc(design.title || '').toLowerCase()}" data-status="${active ? 'active' : 'inactive'}">
+            <img src="${esc(design.image_url || fallbackImage())}" alt="${esc(design.title)}">
+            <div>
+                <span class="admin-card-kicker">${esc(design.code || 'без кода')} · ${esc(design.theme || 'dark')}</span>
+                <strong>${esc(design.title)}</strong>
+                <p>Порядок: ${Number(design.sort_order || 0)}</p>
+            </div>
+            <div class="admin-compact-meta">
+                <span class="admin-pill ${active ? 'active' : 'inactive'}">${active ? 'Активный' : 'Скрытый'}</span>
+            </div>
+            <div class="admin-row-actions">
+                <button class="icon-mini" type="button" data-admin-row-edit="certificateDesign" data-id="${design.id}" title="Редактировать">✎</button>
+                <button class="icon-mini" type="button" data-admin-delete="certificateDesign" data-id="${design.id}" title="Скрыть">⋮</button>
+            </div>
+            <div class="admin-compact-editor" data-admin-editor="certificateDesign-${design.id}" hidden>${adminCertificateDesignForm(design)}</div>
+        </article>
+    `;
+}
+
+function adminCertificateDeliveryCard(option) {
+    const active = option.is_active !== false;
+    return `
+        <article class="admin-compact-card" data-admin-certificate-delivery-row data-title="${esc(option.title || '').toLowerCase()}" data-status="${active ? 'active' : 'inactive'}">
+            <div class="admin-delivery-icon">${esc(option.icon || '□')}</div>
+            <div>
+                <span class="admin-card-kicker">Порядок: ${Number(option.sort_order || 0)}</span>
+                <strong>${esc(option.title)}</strong>
+                <p>${esc(option.description || 'Без описания')}</p>
+            </div>
+            <div class="admin-compact-meta">
+                <span class="admin-pill ${active ? 'active' : 'inactive'}">${active ? 'Активный' : 'Скрытый'}</span>
+            </div>
+            <div class="admin-row-actions">
+                <button class="icon-mini" type="button" data-admin-row-edit="certificateDelivery" data-id="${option.id}" title="Редактировать">✎</button>
+                <button class="icon-mini" type="button" data-admin-delete="certificateDelivery" data-id="${option.id}" title="Скрыть">⋮</button>
+            </div>
+            <div class="admin-compact-editor" data-admin-editor="certificateDelivery-${option.id}" hidden>${adminCertificateDeliveryForm(option)}</div>
+        </article>
     `;
 }
 
@@ -2126,18 +2473,37 @@ function adminPurchasedCertificateRow(item) {
         </tr>
     `;
 }
+function allCategories() {
+    return [...new Set([
+        'Портрет',
+        'Love Story',
+        'Пара',
+        'Семья',
+        'Беременность',
+        'Студийные',
+        'Коммерческие',
+        'Доп. услуги',
+        ...state.services.map((item) => item.category),
+        ...state.portfolio.map((item) => item.category)
+    ].filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
+}
+
 function categorySelect(name, selected = '') {
-    const categories = ['Портрет', 'Love Story', 'Семья', 'Беременность', 'Студийные', 'Коммерческие', 'Доп. услуги'];
+    const categories = allCategories();
+    const known = categories.includes(selected);
     return `
-        <select name="${esc(name)}">
-            <option value="">Выберите категорию</option>
-            ${categories.map((category) => `<option value="${esc(category)}" ${category === selected ? 'selected' : ''}>${esc(category)}</option>`).join('')}
-        </select>
+        <span class="category-field">
+            <select name="${esc(name)}">
+                <option value="">Выберите категорию</option>
+                ${categories.map((category) => `<option value="${esc(category)}" ${category === selected ? 'selected' : ''}>${esc(category)}</option>`).join('')}
+            </select>
+            <input name="${esc(name)}Custom" value="${known ? '' : esc(selected)}" placeholder="Новая категория">
+        </span>
     `;
 }
 
 function categoryFilter(scope) {
-    const categories = ['Портрет', 'Love Story', 'Семья', 'Беременность', 'Студийные', 'Коммерческие', 'Доп. услуги'];
+    const categories = allCategories();
     return `
         <select data-admin-filter-category="${esc(scope)}">
             <option value="">Все категории</option>
@@ -2217,6 +2583,8 @@ function filterAdminRows(scope, selector) {
         row.hidden = !visible;
         const editor = row.nextElementSibling;
         if (editor?.matches('.admin-inline-editor') && !visible) editor.hidden = true;
+        const cardEditor = row.querySelector?.('.admin-compact-editor');
+        if (cardEditor && !visible) cardEditor.hidden = true;
     });
 }
 
@@ -2241,12 +2609,20 @@ function exportAdminTable(scope) {
         return;
     }
 
-    const headers = [...table.querySelectorAll('thead th')]
+    const isCardExport = !table.matches('table');
+    const headers = isCardExport ? ['Название', 'Описание', 'Статус', 'Сумма'] : [...table.querySelectorAll('thead th')]
         .map((cell) => cell.textContent.trim())
         .filter((text) => text && text !== 'Действия');
-    const body = rows.map((row) => [...row.children]
-        .slice(0, headers.length)
-        .map((cell) => `"${cell.textContent.replace(/\s+/g, ' ').trim().replace(/"/g, '""')}"`)
+    const body = rows.map((row) => (isCardExport
+        ? [
+            row.querySelector('strong')?.textContent || '',
+            row.querySelector('p')?.textContent || '',
+            row.querySelector('.admin-pill')?.textContent || '',
+            row.querySelector('.admin-compact-meta b')?.textContent || ''
+        ]
+        : [...row.children].slice(0, headers.length).map((cell) => cell.textContent)
+    )
+        .map((text) => `"${String(text).replace(/\s+/g, ' ').trim().replace(/"/g, '""')}"`)
         .join(','));
     const csv = [headers.map((item) => `"${item}"`).join(','), ...body].join('\n');
     const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
@@ -2317,6 +2693,15 @@ async function uploadImageFile(file) {
     return result.url;
 }
 
+async function uploadImageFiles(files = []) {
+    const selected = [...files].filter((file) => file && file.size > 0);
+    const urls = [];
+    for (const file of selected) {
+        urls.push(await uploadImageFile(file));
+    }
+    return urls;
+}
+
 async function uploadAvatarFile(file) {
     if (!file || !file.name || file.size === 0) return null;
     const dataUrl = await compressImageFile(file, 900, 0.86);
@@ -2328,9 +2713,18 @@ async function uploadAvatarFile(file) {
 
 async function collectFormDataWithUploads(form) {
     const data = Object.fromEntries(new FormData(form).entries());
+    const galleryInput = form.querySelector('[name="imageFiles"]');
+    const galleryFiles = galleryInput?.files ? [...galleryInput.files] : [];
 
     if (data.imageFile instanceof File && data.imageFile.size > 0) {
         data.imageUrl = await uploadImageFile(data.imageFile);
+    }
+
+    if (galleryFiles.length > 0) {
+        data.galleryImageUrls = await uploadImageFiles(galleryFiles);
+        if (!data.imageUrl && data.galleryImageUrls.length) {
+            data.imageUrl = data.galleryImageUrls[0];
+        }
     }
 
     if (data.heroImageFile instanceof File && data.heroImageFile.size > 0) {
@@ -2342,9 +2736,56 @@ async function collectFormDataWithUploads(form) {
     }
 
     delete data.imageFile;
+    delete data.imageFiles;
     delete data.heroImageFile;
     delete data.aboutImageFile;
+    applyCustomCategory(data);
     return data;
+}
+
+function applyCustomCategory(data) {
+    Object.keys(data).forEach((key) => {
+        if (!key.endsWith('Custom')) return;
+        const baseKey = key.slice(0, -6);
+        if (String(data[key] || '').trim()) data[baseKey] = String(data[key]).trim();
+        delete data[key];
+    });
+    return data;
+}
+
+function updateUploadFileList(input) {
+    const panel = input.closest('.admin-editor-section');
+    const list = panel?.querySelector('[data-file-list]');
+    if (!list) return;
+
+    const files = [...(input.files || [])];
+    list.hidden = files.length === 0;
+    list.innerHTML = files.map((file, index) => `
+        <span>${index + 1}. ${esc(file.name)} <small>${Math.round(file.size / 1024)} КБ</small></span>
+    `).join('');
+}
+
+function setUploadFiles(input, files) {
+    const dataTransfer = new DataTransfer();
+    [...files].filter((file) => file.type?.startsWith('image/')).forEach((file) => dataTransfer.items.add(file));
+    input.files = dataTransfer.files;
+    updateUploadFileList(input);
+}
+
+async function createPortfolioItemsFromService(service, imageUrls = []) {
+    const urls = asArray(imageUrls).filter(Boolean);
+    if (!service || urls.length === 0) return;
+    const baseSortOrder = Math.floor(Date.now() / 1000) % 2000000000;
+
+    await Promise.all(urls.map((imageUrl, index) => api('/api/admin/portfolio', {
+        method: 'POST',
+        body: JSON.stringify({
+            title: `${service.title || 'Услуга'}${urls.length > 1 ? ` ${index + 1}` : ''}`,
+            category: service.category || 'Фотосессия',
+            imageUrl,
+            sortOrder: baseSortOrder + index
+        })
+    })));
 }
 
 function renderCta(title, text) {
@@ -2353,7 +2794,7 @@ function renderCta(title, text) {
             <div>
                 <h2>${esc(title)}</h2>
                 <p>${esc(text)}</p>
-                <button class="btn accent" data-open-booking>Записаться онлайн</button>
+                <button class="btn accent" type="button" data-open-chat>Написать фотографу</button>
             </div>
         </section>
     `;
@@ -2369,11 +2810,11 @@ function renderFooter() {
                 </div>
                 <div>
                     <strong>Навигация</strong>
-                    <p><a href="#home">Главная</a><br><a href="#services">Услуги</a><br><a href="#about">Обо мне</a><br><a href="#portfolio">Портфолио</a><br><a href="#certificate">Сертификат</a></p>
+                    <p><a href="#home">Главная</a><br><a href="#services">Услуги</a><br><a href="#portfolio">Портфолио</a><br><a href="#about">Обо мне</a><br><a href="#certificate">Сертификаты</a><br><a href="#addons">Доп. услуги</a></p>
                 </div>
                 <div>
                     <strong>Контакты</strong>
-                    <p>${esc(state.settings.contact_phone || '+7 (999) 123-45-67')}<br>${esc(state.settings.contact_email || 'info@photostudio.ru')}<br>${esc(state.settings.contact_address || 'г. Москва, ул. Фотографов, 12')}</p>
+                    <p>${esc(state.settings.contact_phone || '+7 (999) 123-45-67')}<br>${esc(state.settings.contact_email || 'nikitinadara43@gmail.com')}<br>${esc(state.settings.contact_address || 'г. Чебоксары')}</p>
                 </div>
                 <div>
                     <strong>Режим работы</strong>
@@ -2526,10 +2967,13 @@ document.addEventListener('click', async (event) => {
     const bookingButton = event.target.closest('[data-open-booking]');
     const closeButton = event.target.closest('[data-close-modal]');
     const logoutButton = event.target.closest('[data-logout]');
+    const chatButton = event.target.closest('[data-open-chat]');
     const cancelButton = event.target.closest('[data-cancel-booking]');
     const authTab = event.target.closest('[data-auth-tab]');
     const certAmountButton = event.target.closest('[data-cert-amount]');
+    const certScrollButton = event.target.closest('[data-scroll-certificate-form]');
     const adminDeleteButton = event.target.closest('[data-admin-delete]');
+    const adminToggleServiceButton = event.target.closest('[data-admin-toggle-service]');
     const adminCreateButton = event.target.closest('[data-open-admin-create]');
     const adminRowEditButton = event.target.closest('[data-admin-row-edit]');
     const adminExportButton = event.target.closest('[data-admin-export]');
@@ -2541,21 +2985,24 @@ document.addEventListener('click', async (event) => {
 
     if (authButton) openAuth(authButton.dataset.openAuth);
     if (bookingButton) openBooking(bookingButton.dataset.service, bookingButton.dataset.package);
+    if (chatButton) {
+        if (!state.user) {
+            sessionStorage.setItem('photoPendingRoute', 'profile?section=chat');
+            openAuth('login');
+            showToast('Войдите, чтобы открыть чат с фотографом');
+        } else {
+            location.hash = 'profile?section=chat';
+        }
+    }
     if (closeButton) closeButton.closest('.modal').hidden = true;
     if (authTab) setAuthMode(authTab.dataset.authTab);
+    if (certScrollButton) {
+        openCertificatePurchaseModal();
+    }
     if (certAmountButton) {
-        const amount = Number(certAmountButton.dataset.certAmount);
-        document.querySelectorAll('[data-cert-amount]').forEach((button) => button.classList.toggle('active', button === certAmountButton));
-        document.querySelector('[data-certificate-amount]').value = amount;
-        document.querySelector('[data-cert-total]').textContent = money(amount);
-        const label = certAmountButton.dataset.certType === 'service' ? certAmountButton.dataset.certTitleValue : money(amount);
-        document.querySelector('[data-cert-preview]').textContent = label;
-        document.querySelector('[data-cert-title]').textContent = label;
-        const previewTitle = document.querySelector('.certificate-preview h2');
-        if (previewTitle) previewTitle.innerHTML = `${certAmountButton.dataset.certType === 'service' ? 'Сертификат на услугу' : 'Сертификат на сумму'}<br><span data-cert-title>${esc(label)}</span>`;
+        setCertificateSelection(certAmountButton, true);
     }
     if (certTabButton) {
-        document.querySelectorAll('[data-cert-tab]').forEach((button) => button.classList.toggle('active', button === certTabButton));
         applyCertificateMode(certTabButton.dataset.certTab);
     }
     if (serviceThumb) {
@@ -2629,7 +3076,27 @@ document.addEventListener('click', async (event) => {
                 : `admin-${type === 'service' ? 'services' : type === 'addon' ? 'addons' : 'portfolio'}`;
         }
     }
+    if (adminToggleServiceButton) {
+        const id = adminToggleServiceButton.dataset.adminToggleService;
+        const isActive = adminToggleServiceButton.dataset.active === 'true';
+        await api(`/api/admin/services/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ isActive })
+        });
+        showToast(isActive ? 'Услуга активирована' : 'Услуга сделана неактивной');
+        await boot();
+        location.hash = 'admin-services';
+    }
     if (adminCreateButton) {
+        const createType = adminCreateButton.dataset.openAdminCreate;
+        if (createType === 'service') {
+            openAdminEditorModal('Добавление услуги', adminServiceEditor({}, 'create', true));
+            return;
+        }
+        if (createType === 'addon') {
+            openAdminEditorModal('Добавление доп. услуги', adminAddonEditor({}, 'create', true));
+            return;
+        }
         const forms = {
             service: '#adminServiceForm',
             addon: '#adminAddonForm',
@@ -2643,6 +3110,26 @@ document.addEventListener('click', async (event) => {
         if (form) form.hidden = !form.hidden;
     }
     if (adminRowEditButton) {
+        const editType = adminRowEditButton.dataset.adminRowEdit;
+        const id = Number(adminRowEditButton.dataset.id);
+        if (editType === 'service') {
+            if (!state.adminServices.length) {
+                state.adminServices = asArray(await api('/api/admin/services'));
+            }
+            const service = state.adminServices.find((item) => Number(item.id) === id);
+            if (service) openAdminEditorModal('Редактирование услуги', adminServiceEditor(service, 'edit', true));
+            else showToast('Услуга не найдена');
+            return;
+        }
+        if (editType === 'addon') {
+            if (!state.adminAddons.length) {
+                state.adminAddons = asArray(await api('/api/admin/addons'));
+            }
+            const addon = state.adminAddons.find((item) => Number(item.id) === id);
+            if (addon) openAdminEditorModal('Редактирование доп. услуги', adminAddonEditor(addon, 'edit', true));
+            else showToast('Доп. услуга не найдена');
+            return;
+        }
         const editor = document.querySelector(`[data-admin-editor="${adminRowEditButton.dataset.adminRowEdit}-${adminRowEditButton.dataset.id}"]`);
         if (editor) editor.hidden = !editor.hidden;
     }
@@ -2667,6 +3154,9 @@ document.addEventListener('input', (event) => {
 });
 
 document.addEventListener('change', (event) => {
+    if (event.target.matches('.admin-upload-zone input[type="file"]')) {
+        updateUploadFileList(event.target);
+    }
     if (event.target.matches('[data-admin-filter-category], [data-admin-filter-status], [data-admin-filter-date]')) {
         filterAdminTables();
     }
@@ -2694,6 +3184,31 @@ document.addEventListener('change', (event) => {
     if (event.target.matches('[name="delivery"]')) {
         document.querySelectorAll('.delivery-card').forEach((card) => card.classList.toggle('active', card.contains(event.target)));
     }
+    if (event.target.matches('#certificateForm [name="customAmount"]')) {
+        setCertificateCustomAmount(event.target);
+    }
+});
+
+document.addEventListener('dragover', (event) => {
+    const zone = event.target.closest('[data-upload-zone]');
+    if (!zone) return;
+    event.preventDefault();
+    zone.classList.add('dragover');
+});
+
+document.addEventListener('dragleave', (event) => {
+    const zone = event.target.closest('[data-upload-zone]');
+    if (!zone) return;
+    zone.classList.remove('dragover');
+});
+
+document.addEventListener('drop', (event) => {
+    const zone = event.target.closest('[data-upload-zone]');
+    if (!zone) return;
+    event.preventDefault();
+    zone.classList.remove('dragover');
+    const input = zone.querySelector('input[type="file"]');
+    if (input) setUploadFiles(input, event.dataTransfer.files);
 });
 
 document.addEventListener('submit', async (event) => {
@@ -2708,6 +3223,14 @@ document.addEventListener('submit', async (event) => {
             showToast('Вы вошли');
         }
         if (form.id === 'registerForm') {
+            if (data.password !== data.repeatPassword) {
+                showToast('Пароли не совпадают');
+                return;
+            }
+            if (String(data.botCheck || '').trim() !== '5') {
+                showToast('Проверка не пройдена');
+                return;
+            }
             setSession(await api('/auth/register', { method: 'POST', body: JSON.stringify(data) }));
             authModal.hidden = true;
             showToast('Аккаунт создан');
@@ -2738,7 +3261,7 @@ document.addEventListener('submit', async (event) => {
         if (form.id === 'bookingPageForm') {
             if (!state.user) {
                 openAuth('login');
-                showToast('Чтобы сохранить запись в базе, сначала войдите или зарегистрируйтесь');
+                showToast('Чтобы оформить запись, сначала войдите или зарегистрируйтесь');
                 return;
             }
 
@@ -2768,8 +3291,13 @@ document.addEventListener('submit', async (event) => {
         }
         if (form.id === 'certificateForm') {
             if (data.customAmount) data.amount = data.customAmount;
+            if (!Number(data.amount) || Number(data.amount) < 1000) {
+                showToast('Укажите сумму сертификата от 1 000 ₽');
+                return;
+            }
             await api('/api/certificates', { method: 'POST', body: JSON.stringify(data) });
             form.reset();
+            document.querySelector('#certificatePurchaseModal')?.setAttribute('hidden', '');
             showToast('Заявка на сертификат отправлена');
         }
         if (form.id === 'profileForm') {
@@ -2827,6 +3355,8 @@ document.addEventListener('submit', async (event) => {
             data = await collectFormDataWithUploads(form);
             const id = form.dataset.id;
             const type = form.dataset.adminEdit;
+            const galleryImageUrls = asArray(data.galleryImageUrls);
+            delete data.galleryImageUrls;
             const paths = {
                 booking: `/api/admin/bookings/${id}`,
                 schedule: `/api/admin/working-hours/${id}`,
@@ -2838,8 +3368,12 @@ document.addEventListener('submit', async (event) => {
                 certificateDesign: `/api/admin/certificate-designs/${id}`,
                 certificateDelivery: `/api/admin/certificate-delivery-options/${id}`
             };
-            await api(paths[type], { method: ['certificate', 'booking'].includes(type) ? 'PATCH' : 'PUT', body: JSON.stringify(data) });
+            const savedItem = await api(paths[type], { method: ['certificate', 'booking'].includes(type) ? 'PATCH' : 'PUT', body: JSON.stringify(data) });
+            if (type === 'service') {
+                await createPortfolioItemsFromService(savedItem, galleryImageUrls);
+            }
             showToast('Изменения сохранены');
+            closeAdminEditorModal();
             await boot();
             location.hash = `admin-${type === 'booking' ? 'bookings' : type === 'schedule' ? 'schedule' : type === 'service' ? 'services' : type === 'addon' ? 'addons' : ['certificate', 'certificateProduct', 'certificateDesign', 'certificateDelivery'].includes(type) ? 'certificates' : 'portfolio'}`;
         }
@@ -2852,8 +3386,12 @@ document.addEventListener('submit', async (event) => {
         }
         if (form.id === 'adminServiceForm') {
             data = await collectFormDataWithUploads(form);
-            await api('/api/admin/services', { method: 'POST', body: JSON.stringify(data) });
+            const galleryImageUrls = asArray(data.galleryImageUrls);
+            delete data.galleryImageUrls;
+            const service = await api('/api/admin/services', { method: 'POST', body: JSON.stringify(data) });
+            await createPortfolioItemsFromService(service, galleryImageUrls);
             showToast('Услуга добавлена');
+            closeAdminEditorModal();
             await boot();
             location.hash = 'admin-services';
         }
@@ -2861,6 +3399,7 @@ document.addEventListener('submit', async (event) => {
             data = await collectFormDataWithUploads(form);
             await api('/api/admin/addons', { method: 'POST', body: JSON.stringify(data) });
             showToast('Доп. услуга добавлена');
+            closeAdminEditorModal();
             await boot();
             location.hash = 'admin-addons';
         }
@@ -2901,7 +3440,24 @@ document.addEventListener('submit', async (event) => {
     }
 });
 
-window.addEventListener('hashchange', renderCurrentRoute);
+if (menuToggle) {
+    menuToggle.addEventListener('click', toggleMobileMenu);
+}
+
+if (mainNav) {
+    mainNav.addEventListener('click', (event) => {
+        if (event.target.closest('a')) closeMobileMenu();
+    });
+}
+
+window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeMobileMenu();
+});
+
+window.addEventListener('hashchange', () => {
+    closeMobileMenu();
+    renderCurrentRoute();
+});
 boot().catch((error) => {
     app.innerHTML = `<section class="page"><p class="lead">${esc(error.message)}</p></section>`;
 });

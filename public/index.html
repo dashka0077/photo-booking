@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f0f0f">
     <title>PHOTO STUDIO</title>
+    <link rel="preconnect" href="https://images.unsplash.com">
     <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -16,23 +18,34 @@
             </span>
         </a>
 
-        <nav class="nav" aria-label="Навигация">
+        <button class="menu-toggle" type="button" data-menu-toggle aria-expanded="false" aria-controls="mainNav" aria-label="Открыть меню">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+
+        <nav class="nav" id="mainNav" aria-label="Навигация">
             <a href="#home"><span>⌂</span>Главная</a>
             <a href="#services"><span>▣</span>Услуги</a>
             <a href="#portfolio"><span>▤</span>Портфолио</a>
-            <a href="#about"><span>♙</span>Обо мне</a>
+            <a href="#about"><span>◉</span>Обо мне</a>
             <a href="#certificate"><span>□</span>Сертификаты</a>
             <a href="#addons"><span>✦</span>Доп. услуги</a>
-            <a href="#profile" data-auth-link><span>♙</span>Профиль</a>
-            <a href="#favorites" data-auth-link><span>♡</span>Избранное</a>
+            <a href="#profile" data-auth-link hidden><span>◌</span>Профиль</a>
+            <a href="#favorites" data-auth-link hidden><span>♡</span>Избранное</a>
             <a href="#admin" data-admin-link hidden><span>⚙</span>Админка</a>
         </nav>
 
         <div class="actions">
+            <a class="phone-link" href="tel:+79991234567" data-phone-link>
+                <span>+7 (999) 123-45-67</span>
+                <small>Ежедневно 9:00 - 21:00</small>
+            </a>
             <button class="btn ghost" data-open-auth="login">Вход</button>
             <button class="btn" data-open-auth="register">Регистрация</button>
-            <a class="btn accent" href="#booking">Записаться онлайн</a>
-            <button class="icon-btn" data-logout hidden title="Выйти" aria-label="Выйти">↪</button>
+            <a class="btn ghost profile-shortcut" href="#profile" data-auth-link hidden>Профиль</a>
+            <a class="btn accent" href="#booking">Записаться</a>
+            <button class="btn ghost logout-shortcut" data-logout hidden title="Выйти" aria-label="Выйти">Выйти</button>
             <a class="btn ghost admin-shortcut" href="#admin" data-admin-link hidden>Админка</a>
         </div>
     </header>
@@ -47,15 +60,21 @@
                 <button class="tab" data-auth-tab="register">Регистрация</button>
             </div>
             <form id="loginForm" class="form">
-                <label>Email<input type="email" name="email" required></label>
-                <label>Пароль<input type="password" name="password" required></label>
+                <label>Email<input type="email" name="email" autocomplete="email" required></label>
+                <label>Пароль<input type="password" name="password" autocomplete="current-password" required></label>
                 <button class="btn accent" type="submit">Войти</button>
             </form>
             <form id="registerForm" class="form" hidden>
-                <label>Имя<input name="name" required></label>
-                <label>Email<input type="email" name="email" required></label>
-                <label>Телефон<input name="phone"></label>
-                <label>Пароль<input type="password" name="password" minlength="6" required></label>
+                <label>Имя<input name="name" autocomplete="name" required></label>
+                <label>Email<input type="email" name="email" autocomplete="email" required></label>
+                <label>Телефон<input name="phone" autocomplete="tel"></label>
+                <label>Пароль<input type="password" name="password" minlength="6" autocomplete="new-password" required></label>
+                <label>Повторите пароль<input type="password" name="repeatPassword" minlength="6" autocomplete="new-password" required></label>
+                <label class="bot-check">
+                    Проверка
+                    <span>Сколько будет 2 + 3?</span>
+                    <input name="botCheck" inputmode="numeric" autocomplete="off" required>
+                </label>
                 <button class="btn accent" type="submit">Создать аккаунт</button>
             </form>
         </div>
@@ -80,7 +99,7 @@
                 <label>Дата<input type="date" name="date" required></label>
                 <input type="hidden" name="time" required>
                 <div class="wide">
-                    <p class="field-title">Свободные окошки</p>
+                    <p class="field-title">Свободные окна</p>
                     <div class="slot-list" data-slot-list></div>
                 </div>
                 <label class="wide">Комментарий<textarea name="comment" rows="3" placeholder="Пожелания по съемке, локации или образу"></textarea></label>
